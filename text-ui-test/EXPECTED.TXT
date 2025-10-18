@@ -2,6 +2,7 @@ Welcome to orCASHbuddy
 Add an expense:                        add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]
 Set a budget:                          setbudget a/AMOUNT
 List all expenses & statistics:        list
+Find expenses:                         find cat/CATEGORY or find desc/DESCRIPTION
 Mark an expense as paid:               mark EXPENSE_INDEX
 Mark an expense as unpaid:             unmark EXPENSE_INDEX
 Delete an expense:                     delete EXPENSE_INDEX

@@ -6,11 +6,11 @@ import org.junit.jupiter.api.Test;
 import seedu.orcashbuddy.expense.Expense;
 import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.ui.Ui;
-import seedu.orcashbuddy.exception.OrCashBuddyException;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Command-level tests for the SortCommand.

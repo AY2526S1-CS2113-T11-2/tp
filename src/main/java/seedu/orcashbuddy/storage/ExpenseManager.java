@@ -214,4 +214,53 @@ public class ExpenseManager {
         assert sortedExpenses.size() == expenses.size() : "Sorted expenses size should match original expenses size";
         ui.showSortedList(sortedExpenses);
     }
+
+    //@@author muadzyamani
+    /**
+     * Finds all expenses that match the specified category (case-insensitive).
+     *
+     * @param category the category to search for
+     * @return list of expenses matching the category
+     */
+    public ArrayList<Expense> findExpensesByCategory(String category) {
+        assert category != null && !category.isBlank() : "Category must not be blank";
+
+        ArrayList<Expense> foundExpenses = new ArrayList<>();
+        String searchTerm = category.toLowerCase().trim();
+
+        for (Expense expense : expenses) {
+            if (expense.getCategory().toLowerCase().contains(searchTerm)) {
+                foundExpenses.add(expense);
+            }
+        }
+
+        LOGGER.log(Level.INFO, "Found {0} expenses matching category: {1}",
+                new Object[]{foundExpenses.size(), category});
+
+        return foundExpenses;
+    }
+
+    /**
+     * Finds all expenses that match the specified description keyword (case-insensitive).
+     *
+     * @param keyword the keyword to search for in descriptions
+     * @return list of expenses matching the keyword
+     */
+    public ArrayList<Expense> findExpensesByDescription(String keyword) {
+        assert keyword != null && !keyword.isBlank() : "Keyword must not be blank";
+
+        ArrayList<Expense> foundExpenses = new ArrayList<>();
+        String searchTerm = keyword.toLowerCase().trim();
+
+        for (Expense expense : expenses) {
+            if (expense.getDescription().toLowerCase().contains(searchTerm)) {
+                foundExpenses.add(expense);
+            }
+        }
+
+        LOGGER.log(Level.INFO, "Found {0} expenses matching description: {1}",
+                new Object[]{foundExpenses.size(), keyword});
+
+        return foundExpenses;
+    }
 }

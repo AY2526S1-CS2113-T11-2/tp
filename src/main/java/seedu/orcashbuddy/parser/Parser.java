@@ -2,6 +2,7 @@ package seedu.orcashbuddy.parser;
 
 import seedu.orcashbuddy.command.Command;
 import seedu.orcashbuddy.command.AddCommand;
+import seedu.orcashbuddy.command.FindCommand;
 import seedu.orcashbuddy.command.SetBudgetCommand;
 import seedu.orcashbuddy.command.DeleteCommand;
 import seedu.orcashbuddy.command.MarkCommand;
@@ -64,6 +65,8 @@ public class Parser {
                 return new HelpCommand();
             case "sort":
                 return new SortCommand();
+            case "find":
+                return parseFindCommand(arguments);
             case "bye":
                 return parseByeCommand(arguments);
             default:
@@ -146,5 +149,21 @@ public class Parser {
     private Command parseUnmarkCommand(String arguments) throws OrCashBuddyException {
         int index = InputValidator.validateIndex(arguments, "unmark");
         return new UnmarkCommand(index);
+    }
+
+    private Command parseFindCommand(String arguments) throws OrCashBuddyException {
+        ArgumentParser argParser = new ArgumentParser(arguments);
+
+        String category = argParser.getOptionalValue(CATEGORY_PREFIX);
+        if (category != null && !category.trim().isEmpty()) {
+            return new FindCommand("category", category.trim());
+        }
+
+        String description = argParser.getOptionalValue(DESCRIPTION_PREFIX);
+        if (description != null && !description.trim().isEmpty()) {
+            return new FindCommand("description", description.trim());
+        }
+
+        throw new OrCashBuddyException("Missing search criteria for 'find' command");
     }
 }

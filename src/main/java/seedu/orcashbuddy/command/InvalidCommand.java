@@ -54,6 +54,8 @@ public class InvalidCommand extends Command {
             ui.showDeleteUsage(errorMessage);
         } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
             ui.showSetBudgetUsage();
+        } else if (errorMessage.contains("find") || errorMessage.contains("search criteria")) {
+            ui.showFindUsage();
         } else if (errorMessage.contains("'mark'")) {
             ui.showMarkUsage(errorMessage);
         } else if (errorMessage.contains("'unmark'")) {

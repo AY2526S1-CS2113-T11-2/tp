@@ -21,6 +21,7 @@ public class Ui {
         System.out.println("Add an expense:                        add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]");
         System.out.println("Set a budget:                          setbudget a/AMOUNT");
         System.out.println("List all expenses & statistics:        list");
+        System.out.println("Find expenses:                         find cat/CATEGORY or find desc/DESCRIPTION");
         System.out.println("Mark an expense as paid:               mark EXPENSE_INDEX");
         System.out.println("Mark an expense as unpaid:             unmark EXPENSE_INDEX");
         System.out.println("Delete an expense:                     delete EXPENSE_INDEX");
@@ -226,5 +227,34 @@ public class Ui {
             assert sortedExpenses.get(i) != null : "Expense in sorted list must not be null";
             System.out.println((i + 1) + ". " + sortedExpenses.get(i).formatForDisplay());
         }
+    }
+
+    //@@author muadzyamani
+    /**
+     * Displays the list of expenses found by the find command.
+     * If no expenses are found, displays a message indicating no results.
+     *
+     * @param foundExpenses the list of expenses that match the search criteria
+     * @param searchTerm the term that was searched for
+     * @param searchType the type of search performed ("category" or "description")
+     */
+    public void showFoundExpenses(ArrayList<Expense> foundExpenses, String searchTerm, String searchType) {
+        if (foundExpenses.isEmpty()) {
+            System.out.println("No expenses found matching " + searchType + ": " + searchTerm);
+            return;
+        }
+
+        System.out.println("Found " + foundExpenses.size() + " expense(s) matching " +
+                searchType + ": " + searchTerm);
+        for (int i = 0; i < foundExpenses.size(); i++) {
+            System.out.println((i + 1) + ". " + foundExpenses.get(i).formatForDisplay());
+        }
+    }
+
+    /**
+     * Displays usage information for the find command.
+     */
+    public void showFindUsage() {
+        System.out.println("Invalid format. Use: find cat/CATEGORY or find desc/DESCRIPTION");
     }
 }
