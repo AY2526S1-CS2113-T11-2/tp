@@ -1,0 +1,80 @@
+@startuml
+!define LIGHTBLUE
+skinparam classAttributeIconSize 0
+
+package "UI Component" {
+    class Ui {
+        - SEPARATOR: String {static}
+        - ERROR_PREFIX: String {static}
+        - CURRENCY_FORMAT: String {static}
+        - PROGRESS_BAR_WIDTH: int {static}
+        - ANSI_GREEN: String {static}
+        - ANSI_YELLOW: String {static}
+        - ANSI_RED: String {static}
+        - ANSI_BLACK: String {static}
+        --
+        + showSeparator(): void
+        + showError(message: String): void
+        + showWelcome(): void
+        + showGoodbye(): void
+        + showMenu(): void
+        + showNewExpense(expense: Expense): void
+        + showEditedExpense(expense: Expense): void
+        + showDeletedExpense(expense: Expense): void
+        + showMarkedExpense(expense: Expense): void
+        + showUnmarkedExpense(expense: Expense): void
+        + showNewBudget(budget: double): void
+        + showFinancialSummary(budget: double, totalExpense: double, remainingBalance: double, expenses: List<Expense>): void
+        + showEmptyExpenseList(): void
+        + showSortedExpenseList(sortedExpenses: List<Expense>): void
+        + showFoundExpenses(foundExpenses: List<Expense>, searchTerm: String, searchType: String): void
+        + showAddUsage(): void
+        + showDeleteUsage(): void
+        + showSetBudgetUsage(): void
+        + showMarkUsage(): void
+        + showUnmarkUsage(): void
+        + showFindUsage(): void
+        + showEditUsage(): void
+        + showUnknownCommand(): void
+        + showBudgetStatus(status: BudgetStatus, remaining: double): void
+        - showExpenseWithLabel(label: String, expense: Expense): void
+        - showBudget(budget: double): void
+        - showTotalExpenses(totalExpense: double): void
+        - showRemainingBalance(remainingBalance: double): void
+        - formatCurrency(amount: double): String
+        - showProgressBar(budget: double, totalExpense: double): void
+        - showExpenseList(expenses: List<Expense>): void
+        - showNumberedExpenses(expenses: List<Expense>): void
+    }
+}
+
+package "Model Component" {
+    class Expense {
+        + formatForDisplay(): String
+    }
+
+    enum BudgetStatus {
+        EXCEEDED
+        EQUAL
+        NEAR
+        OK
+    }
+}
+
+package "Command Component" {
+    abstract class Command {
+        + {abstract} execute(expenseManager: ExpenseManager, ui: Ui): void
+    }
+}
+
+Ui ..> Expense : displays
+Ui ..> BudgetStatus : uses
+Command ..> Ui : uses
+
+note right of Ui
+  All output is console-based
+  using System.out.println().
+  No JavaFX or GUI components.
+end note
+
+@enduml

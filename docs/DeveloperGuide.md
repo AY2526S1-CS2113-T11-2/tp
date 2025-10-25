@@ -59,6 +59,22 @@ Follow these steps to set up the project in IntelliJ IDEA:
 
 ### UI Component
 
+**API**: `Ui.java`
+
+The `Ui` class handles all console-based user interactions in orCASHbuddy.
+
+#### Structure of the UI Component
+![UI Component Class Diagram](docs/diagrams/ui-component-class.png)
+
+The `Ui` component is a single class that encapsulates all display logic. All output is rendered to the console using `System.out.println()`.
+
+The UI component:
+- **is invoked by commands** in the Command component to display results after execution
+- **displays data** from `Expense` objects and `BudgetStatus` enums in the Model component
+- **does not hold references** to `ExpenseManager` or any other stateful components
+- **receives all data as method parameters**, making it stateless and purely presentational
+- **uses ANSI color codes** for the budget progress bar visualization (green/yellow/red based on spending)
+
 <br>
 
 ### Logic Component
@@ -90,7 +106,7 @@ Namespace: `seedu.orcashbuddy.expense`, `seedu.orcashbuddy.storage`
 
 ### Storage Component
 
-The storage subsystem in orCASHbuddy is responsible for saving user expensse and budget data between sessions.
+The storage subsystem in orCASHbuddy is responsible for saving user expense and budget data between sessions.
 It uses Java object serialization to store the entire `ExpenseManager` object (which contains all expenses and budget state) into a `.ser` file.
 1. **StorageManager**: Handles file I/O and serialisation (save/load).
 2. **ExpenseManager**: Serialisable class that maintains the list of `Expense` objects and budget-related values.
