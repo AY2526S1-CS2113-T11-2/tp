@@ -20,7 +20,11 @@ Main -> Parser : parse("list")
 activate Parser
 
 create ListCommand
-Parser -> ListCommand
+Parser -> ListCommand : new ListCommand()
+activate ListCommand
+ListCommand --> Parser
+deactivate ListCommand
+
 Parser --> Main : listCommand
 deactivate Parser
 
