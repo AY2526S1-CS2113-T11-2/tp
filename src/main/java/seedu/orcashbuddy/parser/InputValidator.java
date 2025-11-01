@@ -100,8 +100,7 @@ public class InputValidator {
      * @param input       the raw index string (e.g. "3")
      * @param commandName the command being validated
      * @return the parsed 1-based index as an int
-     * @throws OrCashBuddyException if the index is missing, not a valid number,
-     * outside the parsable {@code int} range, or < 1
+     * @throws OrCashBuddyException if the index is missing, not a valid number, or less than 1
      */
     public static int validateIndex(String input, String commandName) throws OrCashBuddyException {
         if (input == null || input.isEmpty()) {
