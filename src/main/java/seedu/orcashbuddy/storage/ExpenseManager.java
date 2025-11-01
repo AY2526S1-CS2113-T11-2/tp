@@ -383,6 +383,7 @@ public class ExpenseManager implements Serializable {
         assert expense != null : "Expense must not be null";
 
         totalExpenses -= expense.getAmount();
+        assert totalExpenses >= 0 : "Total expenses must not be negative after unmarking";
         recalculateRemainingBalance();
 
         LOGGER.info(() -> "Updated budget after unmark: total=" + totalExpenses +
