@@ -2,114 +2,69 @@
 !theme vibrant
 actor User
 participant ":Main" as Main
-participant ":StorageManager" as StorageManager
 participant ":Parser" as Parser
 participant ":ArgumentParser" as ArgumentParser
 participant ":InputValidator" as InputValidator
 participant ":AddCommand" as AddCommand
 participant ":InvalidCommand" as InvalidCommand
-participant ":Expense" as Expense
 participant ":ExpenseManager" as ExpenseManager
 participant ":Ui" as Ui
 
-activate Main
-Main -> StorageManager : loadExpenseManager(ui)
-activate StorageManager
-StorageManager --> Main : expenseManager
-deactivate StorageManager
-
 User -> Main : enters "add a/10 desc/lunch cat/food"
+activate Main
 
 Main -> Parser : parse("add a/10 desc/lunch cat/food")
 activate Parser
 
-alt successful parsing
+create ArgumentParser
+Parser -> ArgumentParser : extract prefixes
+activate ArgumentParser
 
-    create ArgumentParser
-    Parser -> ArgumentParser : "a/10 desc/lunch cat/food"
-    activate ArgumentParser
-    Parser -> ArgumentParser : getValue("a/")
-    ArgumentParser --> Parser : "10"
-    Parser -> ArgumentParser : getValue("desc/")
-    ArgumentParser --> Parser : "lunch"
-    deactivate ArgumentParser
+Parser -> ArgumentParser : getValue("a/")
+ArgumentParser --> Parser : "10"
+Parser -> ArgumentParser : getValue("desc/")
+ArgumentParser --> Parser : "lunch"
+Parser -> ArgumentParser : getOptionalValue("cat/")
+ArgumentParser --> Parser : "food"
+deactivate ArgumentParser
 
-    opt get optional category
-        Parser -> ArgumentParser : getOptionalValue("cat/")
-        activate ArgumentParser
-        ArgumentParser --> Parser : "food"
-        deactivate ArgumentParser
-    end
+Parser -> InputValidator : validate amount/description/category
+activate InputValidator
 
-    Parser -> InputValidator : validateAmount("10", "add")
-    activate InputValidator
-    InputValidator --> Parser : 10.0
+alt validation succeeds
+    InputValidator --> Parser : validation OK
     deactivate InputValidator
-    Parser -> InputValidator : validateDescription("lunch", "add")
-    activate InputValidator
-    InputValidator --> Parser : "lunch"
-    deactivate InputValidator
-    Parser -> InputValidator : validateCategory("food", "add")
-    activate InputValidator
-    InputValidator --> Parser : "food"
-    deactivate InputValidator
-
     create AddCommand
-    Parser -> AddCommand : 10.0, "lunch", "food"
-    Parser --> Main : addCommand
+    Parser -> AddCommand : amount, description, category
+    Parser --> Main : AddCommand
 
-else validation fails
-
-    Parser -> InputValidator : validateAmount("invalid", "add")
-    activate InputValidator
-    InputValidator -->> Parser : throws OrCashBuddyException
-    deactivate InputValidator
-
-    create InvalidCommand
-    Parser -> InvalidCommand
-    Parser --> Main : invalidCommand
-
-end
-
-deactivate Parser
-
-alt command is AddCommand
     Main -> AddCommand : execute(expenseManager, ui)
     activate AddCommand
-
-    create Expense
-    AddCommand -> Expense : 10.0, "lunch", "food"
-
-    AddCommand -> ExpenseManager : addExpense(expense)
+    AddCommand -> ExpenseManager : addExpense(...)
     activate ExpenseManager
     deactivate ExpenseManager
-
-    AddCommand -> Ui : showSeparator()
+    AddCommand -> Ui : showNewExpense(...)
     activate Ui
+    Ui --> User : confirmation message
     deactivate Ui
-    AddCommand -> Ui : showNewExpense(expense)
-    activate Ui
-    Ui --> User : displays confirmation
-    deactivate Ui
-    AddCommand -> Ui : showSeparator()
-    activate Ui
-    deactivate Ui
-
     deactivate AddCommand
+else validation fails
+    activate InputValidator
+    InputValidator -->> Parser : OrCashBuddyException
+    deactivate InputValidator
+    create InvalidCommand
+    Parser -> InvalidCommand
+    Parser --> Main : InvalidCommand
 
-else command is InvalidCommand
     Main -> InvalidCommand : execute(expenseManager, ui)
     activate InvalidCommand
-    InvalidCommand -> Ui : showError(message)
+    InvalidCommand -> Ui : showError(...)
     activate Ui
-    Ui --> User : displays error message
+    Ui --> User : error message
     deactivate Ui
     deactivate InvalidCommand
 end
 
-Main -> StorageManager : saveExpenseManager(expenseManager, ui)
-activate StorageManager
-deactivate StorageManager
-
+deactivate Parser
 deactivate Main
 @enduml

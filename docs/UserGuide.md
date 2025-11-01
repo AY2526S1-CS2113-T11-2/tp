@@ -32,10 +32,10 @@ This document explains how to set up the application, describes every available 
 ## Quick Start
 
 1. **Install Java 17.** orCASHbuddy requires Java 17 or later. You can verify your version by running `java -version` in your terminal.
-2. **Download the application.** Grab the latest `orcashbuddy.jar` from your course release or the project's GitHub Releases page and place it in a convenient folder.
+2. **Download the application.** Grab the latest `orCASHbuddy.main.jar` from your course release or the project's GitHub Releases page and place it in a convenient folder.
 3. **Launch the program.** Open a terminal in the folder containing the JAR and run:
    ```bash
-   java -jar orcashbuddy.jar
+   java -jar orCASHbuddy.main.jar
    ```
    Once the program starts, you’ll see a welcome message and the command menu in your terminal window, as shown below.
    ![welcome.png](images/welcome.png)
@@ -81,10 +81,10 @@ Creates a new expense entry with an amount, description, and optional category.
 
 **Examples:**
 ```
-`add a/4.50 desc/venue booking`
+add a/4.50 desc/venue booking
 ```
 ```
-`add a/32.90 desc/event poster cat/publicity`
+add a/32.90 desc/event poster cat/publicity
 ```
 
 The newly added expense appears as `[ ] [CATEGORY] DESCRIPTION - $AMOUNT`. The `[ ]` will switch to `[X]` once the expense is marked as paid.
@@ -267,7 +267,7 @@ You can also terminate the program by closing the terminal window, but using `by
 - If no saved data exists, you start with an empty expense list and zero budget
 
 **Data Location:**
-- The `data` folder is created in the same directory as `orcashbuddy.jar`
+- The `data` folder is created in the same directory as `orCASHbuddy.main.jar`
 - Do not manually edit or delete `appdata.ser` unless you want to reset all data
 
 **What's Saved:**
@@ -327,7 +327,7 @@ You can also terminate the program by closing the terminal window, but using `by
 
 **Q: Where is my data stored?**
 
-**A:** Your data is saved in a file called `appdata.ser` inside a `data` folder, located in the same directory as `orcashbuddy.jar`. This file is automatically created when you first add an expense or set a budget.
+**A:** Your data is saved in a file called `appdata.ser` inside a `data` folder, located in the same directory as `orCASHbuddy.main.jar`. This file is automatically created when you first add an expense or set a budget.
 
 ---
 
