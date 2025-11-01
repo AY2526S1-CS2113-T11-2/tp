@@ -198,48 +198,54 @@ public class ExpenseManager implements Serializable {
     //@@author muadzyamani
     /**
      * Marks the specified expense as paid.
-     * <ul>
-     *   <li>If it was previously unmarked, it is marked.</li>
-     *   <li>The expense amount is added to {@code totalExpenses}.</li>
-     *   <li>{@code remainingBalance} is recalculated.</li>
-     * </ul>
+     * <p>
+     * This method updates the expense's marked status to indicate it has been paid.
+     * The expense amount is added to the total expenses and the remaining balance
+     * is recalculated accordingly.
+     * </p>
      *
      * @param index the 1-based index of the expense to mark
      * @return the marked expense
-     * @throws OrCashBuddyException if the index is out of range
+     * @throws OrCashBuddyException if the index is out of range or if the expense
+     *                              is already marked as paid
      */
     public Expense markExpense(int index) throws OrCashBuddyException {
         validateIndex(index);
 
         Expense expense = expenses.get(index - 1);
-        if (!expense.isMarked()) {
-            expense.mark();
-            updateBudgetAfterMark(expense);
+        if (expense.isMarked()) {
+            throw new OrCashBuddyException("This expense is already marked as paid.");
         }
+
+        expense.mark();
+        updateBudgetAfterMark(expense);
 
         return expense;
     }
 
     /**
      * Unmarks the specified expense.
-     * <ul>
-     *   <li>If it was previously marked, it becomes unmarked.</li>
-     *   <li>The expense amount is subtracted from {@code totalExpenses}.</li>
-     *   <li>{@code remainingBalance} is recalculated.</li>
-     * </ul>
+     * <p>
+     * This method updates the expense's marked status to indicate it has not been paid.
+     * The expense amount is subtracted from the total expenses and the remaining balance
+     * is recalculated accordingly.
+     * </p>
      *
      * @param index the 1-based index of the expense to unmark
      * @return the unmarked expense
-     * @throws OrCashBuddyException if the index is out of range
+     * @throws OrCashBuddyException if the index is out of range or if the expense
+     *                              is already unmarked
      */
     public Expense unmarkExpense(int index) throws OrCashBuddyException {
         validateIndex(index);
 
         Expense expense = expenses.get(index - 1);
-        if (expense.isMarked()) {
-            expense.unmark();
-            updateBudgetAfterUnmark(expense);
+        if (!expense.isMarked()) {
+            throw new OrCashBuddyException("This expense is already unmarked.");
         }
+
+        expense.unmark();
+        updateBudgetAfterUnmark(expense);
 
         return expense;
     }
