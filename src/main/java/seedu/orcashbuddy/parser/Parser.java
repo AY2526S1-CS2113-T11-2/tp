@@ -197,12 +197,16 @@ public class Parser {
 
         String category = argParser.getOptionalValue(CATEGORY_PREFIX);
         if (category != null && !category.trim().isEmpty()) {
-            return new FindCommand("category", category.trim());
+            String trimmedCategory = category.trim();
+            InputValidator.ensureAscii(trimmedCategory, "Category");
+            return new FindCommand("category", trimmedCategory);
         }
 
         String description = argParser.getOptionalValue(DESCRIPTION_PREFIX);
         if (description != null && !description.trim().isEmpty()) {
-            return new FindCommand("description", description.trim());
+            String trimmedDescription = description.trim();
+            InputValidator.ensureAscii(trimmedDescription, "Description");
+            return new FindCommand("description", trimmedDescription);
         }
 
         throw new OrCashBuddyException("Missing search criteria for 'find' command");

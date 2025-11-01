@@ -62,6 +62,16 @@ class InputValidatorTest {
     }
 
     @Test
+    void validateDescription_nonAscii_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateDescription("午餐", COMMAND));
+    }
+
+    @Test
+    void validateCategory_nonAscii_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateCategory("مطبخ", COMMAND));
+    }
+
+    @Test
     void validateIndex_valid_returnsInt() throws Exception {
         assertEquals(3, InputValidator.validateIndex("3", COMMAND));
     }

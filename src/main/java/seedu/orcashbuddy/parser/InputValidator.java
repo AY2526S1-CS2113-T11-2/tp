@@ -61,7 +61,9 @@ public class InputValidator {
         if (description == null || description.trim().isEmpty()) {
             throw OrCashBuddyException.emptyDescription(commandName);
         }
-        return description.trim();
+        String trimmed = description.trim();
+        ensureAscii(trimmed, "Description");
+        return trimmed;
     }
 
     /**
@@ -83,6 +85,8 @@ public class InputValidator {
         if (trimmed.isEmpty()) {
             throw OrCashBuddyException.emptyCategory(commandName);
         }
+
+        ensureAscii(trimmed, "Category");
 
         // Magic String
         if (!trimmed.matches("[A-Za-z][A-Za-z0-9\\s-]{0,19}")) {
@@ -114,6 +118,13 @@ public class InputValidator {
             return index;
         } catch (NumberFormatException e) {
             throw OrCashBuddyException.invalidExpenseIndex(e);
+        }
+    }
+
+    static void ensureAscii(String value, String fieldName) throws OrCashBuddyException {
+        boolean isAscii = value.chars().allMatch(ch -> ch >= 0x20 && ch <= 0x7E);
+        if (!isAscii) {
+            throw OrCashBuddyException.nonAsciiInput(fieldName);
         }
     }
 }
