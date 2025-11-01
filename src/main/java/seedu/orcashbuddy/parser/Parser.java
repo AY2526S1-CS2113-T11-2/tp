@@ -69,9 +69,9 @@ public class Parser {
             case "unmark":
                 return parseUnmarkCommand(arguments);
             case "list":
-                return new ListCommand();
+                return parseListCommand(arguments);
             case "help":
-                return new HelpCommand();
+                return parseHelpCommand(arguments);
             case "sort":
                 return parseSortCommand(arguments);
             case "find":
@@ -128,6 +128,34 @@ public class Parser {
             throw new OrCashBuddyException("'bye' command does not take any arguments");
         }
         return new ByeCommand();
+    }
+
+    /**
+     * Parses the {@code list} command and creates a {@link ListCommand}.
+     *
+     * @param arguments arguments after {@code list} (should be empty)
+     * @return a {@link ListCommand}
+     * @throws OrCashBuddyException if unexpected arguments are provided
+     */
+    private Command parseListCommand(String arguments) throws OrCashBuddyException {
+        if (arguments != null && !arguments.isBlank()) {
+            throw new OrCashBuddyException("'list' command does not take any arguments");
+        }
+        return new ListCommand();
+    }
+
+    /**
+     * Parses the {@code help} command and creates a {@link HelpCommand}.
+     *
+     * @param arguments arguments after {@code help} (should be empty)
+     * @return a {@link HelpCommand}
+     * @throws OrCashBuddyException if unexpected arguments are provided
+     */
+    private Command parseHelpCommand(String arguments) throws OrCashBuddyException {
+        if (arguments != null && !arguments.isBlank()) {
+            throw new OrCashBuddyException("'help' command does not take any arguments");
+        }
+        return new HelpCommand();
     }
 
     //@@author aydrienlaw

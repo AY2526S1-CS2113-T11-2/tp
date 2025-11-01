@@ -6,6 +6,7 @@ import seedu.orcashbuddy.command.AddCommand;
 import seedu.orcashbuddy.command.ByeCommand;
 import seedu.orcashbuddy.command.EditCommand;
 import seedu.orcashbuddy.command.FindCommand;
+import seedu.orcashbuddy.command.HelpCommand;
 import seedu.orcashbuddy.command.InvalidCommand;
 import seedu.orcashbuddy.command.ListCommand;
 import seedu.orcashbuddy.command.MarkCommand;
@@ -43,6 +44,11 @@ class ParserTest {
     }
 
     @Test
+    void parse_listWithArguments_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("list extra"));
+    }
+
+    @Test
     void parse_findByDescription_returnsFindCommand() {
         assertInstanceOf(FindCommand.class, parser.parse("find desc/Grab"));
     }
@@ -50,6 +56,16 @@ class ParserTest {
     @Test
     void parse_findNonAsciiDescription_returnsInvalidCommand() {
         assertInstanceOf(InvalidCommand.class, parser.parse("find desc/午餐"));
+    }
+
+    @Test
+    void parse_help_returnsHelpCommand() {
+        assertInstanceOf(HelpCommand.class, parser.parse("help"));
+    }
+
+    @Test
+    void parse_helpWithArguments_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("help now"));
     }
 
     @Test
