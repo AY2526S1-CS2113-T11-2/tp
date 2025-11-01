@@ -33,4 +33,11 @@ class ArgumentParserTest {
         ArgumentParser parser = new ArgumentParser("a/5 desc/Snack cat/ Treats ");
         assertEquals("Treats", parser.getOptionalValue("cat/"));
     }
+
+    @Test
+    void duplicatePrefixInsideValue_treatedAsLiteralText() throws Exception {
+        ArgumentParser parser = new ArgumentParser("a/12.50 desc/venue booking a/12345");
+        assertEquals("12.50", parser.getValue("a/"));
+        assertEquals("venue booking a/12345", parser.getValue("desc/"));
+    }
 }

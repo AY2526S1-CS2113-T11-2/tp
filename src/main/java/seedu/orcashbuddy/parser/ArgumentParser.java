@@ -2,6 +2,11 @@ package seedu.orcashbuddy.parser;
 
 import seedu.orcashbuddy.exception.OrCashBuddyException;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * Lightweight helper that extracts prefixed argument values from
  * the argument portion of a user command.
@@ -19,7 +24,12 @@ import seedu.orcashbuddy.exception.OrCashBuddyException;
  */
 public class ArgumentParser {
     private static final String[] allPrefixes = {"id/","a/", "desc/", "cat/"};
+    private static final Pattern PREFIX_PATTERN =
+            Pattern.compile("(?<!\\S)(" + String.join("|", allPrefixes) + ")");
+
     private final String input;
+    private final Map<String, String> parsedValues = new HashMap<>();
+    private boolean parsed;
 
     /**
      * Creates a new {@code ArgumentParser} for a given argument string.
@@ -41,17 +51,12 @@ public class ArgumentParser {
      * @throws OrCashBuddyException if the prefix is missing
      */
     public String getValue(String prefix) throws OrCashBuddyException {
-        int prefixIndex = input.indexOf(prefix);
-        if (prefixIndex == -1) {
+        ensureParsed();
+        String value = parsedValues.get(prefix);
+        if (value == null) {
             throw new OrCashBuddyException("Missing prefix: " + prefix);
         }
-
-        int nextPrefixIdx = findNextPrefix(prefixIndex);
-        String value = (nextPrefixIdx == -1)
-                ? input.substring(prefixIndex + prefix.length())
-                : input.substring(prefixIndex + prefix.length(), nextPrefixIdx);
-
-        return value.trim();
+        return value;
     }
 
     /**
@@ -63,34 +68,59 @@ public class ArgumentParser {
      * @return the associated value (trimmed), or {@code null} if the prefix is absent
      */
     public String getOptionalValue(String prefix) {
-        int prefixIndex = input.indexOf(prefix);
-        if (prefixIndex == -1) {
-            return null;
-        }
-
-        int nextPrefixIdx = findNextPrefix(prefixIndex);
-        String value = (nextPrefixIdx == -1)
-                ? input.substring(prefixIndex + prefix.length())
-                : input.substring(prefixIndex + prefix.length(), nextPrefixIdx);
-
-        return value.trim();
+        ensureParsed();
+        return parsedValues.get(prefix);
     }
 
     /**
-     * Finds the earliest prefix index that appears after {@code currentPrefixIdx}.
-     * Used internally to know where one argument value ends and the next begins.
-     *
-     * @param currentPrefixIdx the index of the current prefix in {@link #input}
-     * @return the index of the next prefix, or -1 if none
+     * Lazily tokenises the raw input. Subsequent lookups reuse the cached result.
      */
-    private int findNextPrefix(int currentPrefixIdx) {
-        int nextIdx = -1;
-        for (String prefix : allPrefixes) {
-            int idx = input.indexOf(prefix, currentPrefixIdx + 1);
-            if (idx != -1 && (nextIdx == -1 || idx < nextIdx)) {
-                nextIdx = idx;
-            }
+    private void ensureParsed() {
+        if (parsed) {
+            return;
         }
-        return nextIdx;
+        parseArguments();
+        parsed = true;
+    }
+
+    /**
+     * Tokenises the raw input into prefix/value pairs.
+     * <p>
+     * Duplicate prefixes encountered while another prefix is active (for example {@code desc/... a/...})
+     * are treated as literal text and left inside the current value. This avoids silently truncating values
+     * such as descriptions that legitimately contain strings like {@code "a/12345"}. Should future features
+     * require explicit escaping or duplicate detection, the rule can be tightened here without affecting callers.
+     */
+    private void parseArguments() {
+        Matcher matcher = PREFIX_PATTERN.matcher(input);
+        String activePrefix = null;
+        int valueStart = -1;
+
+        while (matcher.find()) {
+            String nextPrefix = matcher.group(1);
+
+            if (activePrefix == null) {
+                activePrefix = nextPrefix;
+                valueStart = matcher.end();
+                continue;
+            }
+
+            boolean duplicateOfCurrent = nextPrefix.equals(activePrefix);
+            boolean alreadyCaptured = parsedValues.containsKey(nextPrefix);
+            if (duplicateOfCurrent || alreadyCaptured) {
+                // Keep scanning so the duplicate prefix characters remain inside the current value.
+                continue;
+            }
+
+            String value = input.substring(valueStart, matcher.start()).trim();
+            parsedValues.put(activePrefix, value);
+            activePrefix = nextPrefix;
+            valueStart = matcher.end();
+        }
+
+        if (activePrefix != null && !parsedValues.containsKey(activePrefix)) {
+            String value = input.substring(valueStart).trim();
+            parsedValues.put(activePrefix, value);
+        }
     }
 }
