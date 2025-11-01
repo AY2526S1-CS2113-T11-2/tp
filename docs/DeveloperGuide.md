@@ -1449,7 +1449,7 @@ The `list` command serves as a core read-only function within the application, o
    - It first calls `ui.showSeparator()` to visually separate output blocks.
    - It retrieves relevant financial data from `ExpenseManager`:
       - `getBudget()` – retrieves the total budget set by the user.
-      - `getTotalExpenses()` – calculates the total of all recorded expenses.
+      - `getTotalExpenses()` – calculates the total of all marked expenses.
       - `getRemainingBalance()` – computes the difference between the budget and total expenses.
       - `getExpenses()` – returns a list of all `Expense` objects.
    - These values are passed to `ui.showFinancialSummary(budget, totalExpenses, remainingBalance, expenses)` which:
