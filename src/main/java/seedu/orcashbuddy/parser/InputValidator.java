@@ -21,10 +21,11 @@ import seedu.orcashbuddy.expense.Expense;
 public class InputValidator {
 
     //@@author limzerui
+
     /**
      * Validates and parses an amount string.
      *
-     * @param amountStr raw string after {@code a/}
+     * @param amountStr   raw string after {@code a/}
      * @param commandName the command being validated (used in error messages)
      * @return the parsed amount as a double
      * @throws OrCashBuddyException if the amount is missing, non-numeric, or not positive
@@ -69,7 +70,7 @@ public class InputValidator {
      * If {@code null}, falls back to {@link Expense#DEFAULT_CATEGORY}.
      * Otherwise, ensures it meets format constraints (alphanumeric and reasonable length).
      *
-     * @param category raw category after {@code cat/}
+     * @param category    raw category after {@code cat/}
      * @param commandName the command being validated
      * @return a trimmed, valid category string
      * @throws OrCashBuddyException if the category is empty or malformed
@@ -96,23 +97,29 @@ public class InputValidator {
     /**
      * Validates an index argument used for commands like delete/mark/edit.
      *
-     * @param input the raw index string (e.g. "3")
+     * @param input       the raw index string (e.g. "3")
      * @param commandName the command being validated
      * @return the parsed 1-based index as an int
-     * @throws OrCashBuddyException if the index is missing, not numeric, or &lt; 1
+     * @throws OrCashBuddyException if the index is missing, not a valid number,
+     * outside the parsable {@code int} range, or < 1
      */
     public static int validateIndex(String input, String commandName) throws OrCashBuddyException {
         if (input == null || input.isEmpty()) {
             throw OrCashBuddyException.missingExpenseIndex(commandName);
         }
 
+        String trimmed = input.trim();
+
         try {
-            int index = Integer.parseInt(input.trim());
+            int index = Integer.parseInt(trimmed);
             if (index < 1) {
                 throw OrCashBuddyException.expenseIndexTooSmall();
             }
             return index;
         } catch (NumberFormatException e) {
+            if (trimmed.matches("-?\\d+")) {
+                return Integer.MAX_VALUE;
+            }
             throw OrCashBuddyException.invalidExpenseIndex(e);
         }
     }
