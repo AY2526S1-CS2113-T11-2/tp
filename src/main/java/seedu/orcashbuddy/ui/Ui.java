@@ -10,7 +10,6 @@ import java.util.List;
  */
 public class Ui {
     private static final String SEPARATOR = "---------------------------------------------------------------\n";
-    private static final String ERROR_PREFIX = "[ERROR]: ";
     private static final String CURRENCY_FORMAT = "%.2f";
 
     // ========== Progress bar constants ==========
@@ -50,7 +49,7 @@ public class Ui {
      */
     public void showError(String message) {
         showSeparator();
-        System.out.println(ERROR_PREFIX + message);
+        System.out.println(message);
         showSeparator();
     }
 
