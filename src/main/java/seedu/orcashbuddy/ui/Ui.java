@@ -248,6 +248,7 @@ public class Ui {
     private void showProgressBar(double budget, double totalExpense,  double remainingBalance) {
         if (budget <= 0) {
             System.out.println(NO_BUDGET_LABEL);
+            return;
         }
 
         double ratio = totalExpense / budget;
