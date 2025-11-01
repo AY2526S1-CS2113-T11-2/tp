@@ -45,11 +45,6 @@ public class UnmarkCommand extends Command {
 
         ui.showSeparator();
         ui.showUnmarkedExpense(expense);
-        BudgetStatus status = expenseManager.determineBudgetStatus();
-        if (status != BudgetStatus.OK) {
-            double remainingBalance = expenseManager.getRemainingBalance();
-            ui.showBudgetStatus(status, remainingBalance);
-        }
         ui.showSeparator();
     }
 }

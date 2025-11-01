@@ -42,6 +42,7 @@ public class ExpenseManager implements Serializable {
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ExpenseManager.class.getName());
     private static final double BUDGET_ALERT_THRESHOLD = 10.0;
+    private static final double FLOAT_NOISE_THRESHOLD =0.001;
 
     // ========== State ==========
     private final List<Expense> expenses;
@@ -192,11 +193,6 @@ public class ExpenseManager implements Serializable {
 
         Expense removedExpense = deleteExpense(index);
         expenses.add(index - 1, newExpense);
-
-        if (removedExpense.isMarked()) {
-            newExpense.mark();
-            updateBudgetAfterUnmark(removedExpense);
-        }
     }
 
     //@@author muadzyamani
@@ -274,11 +270,11 @@ public class ExpenseManager implements Serializable {
      * @return a {@link BudgetStatus} value such as OK, NEAR, EQUAL, or EXCEEDED
      */
     public BudgetStatus determineBudgetStatus() {
-        if (remainingBalance < 0) {
+        if (remainingBalance < -FLOAT_NOISE_THRESHOLD) {
             return BudgetStatus.EXCEEDED;
-        } else if (remainingBalance == 0) {
+        } else if (remainingBalance >= -FLOAT_NOISE_THRESHOLD && remainingBalance <= FLOAT_NOISE_THRESHOLD) {
             return BudgetStatus.EQUAL;
-        } else if (remainingBalance < BUDGET_ALERT_THRESHOLD) {
+        } else if (remainingBalance < BUDGET_ALERT_THRESHOLD + BUDGET_ALERT_THRESHOLD) {
             return BudgetStatus.NEAR;
         }
         return BudgetStatus.OK;
@@ -387,6 +383,7 @@ public class ExpenseManager implements Serializable {
         assert expense != null : "Expense must not be null";
 
         totalExpenses -= expense.getAmount();
+        assert totalExpenses >= 0 : "Total expenses must not be negative after unmarking";
         recalculateRemainingBalance();
 
         LOGGER.info(() -> "Updated budget after unmark: total=" + totalExpenses +
@@ -399,6 +396,9 @@ public class ExpenseManager implements Serializable {
      */
     private void recalculateRemainingBalance() {
         remainingBalance = budget - totalExpenses;
+        if  (remainingBalance < FLOAT_NOISE_THRESHOLD && remainingBalance >= -FLOAT_NOISE_THRESHOLD) {
+            remainingBalance=0;
+        }
         assert Math.abs(remainingBalance - (budget - totalExpenses)) < 0.001
                 : "Remaining balance calculation error";
     }

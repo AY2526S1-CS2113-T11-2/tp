@@ -227,7 +227,7 @@ public class Ui {
 
         System.out.println();
         System.out.println("BUDGET STATUS");
-        showProgressBar(budget, totalExpense);
+        showProgressBar(budget, totalExpense, remainingBalance);
 
         System.out.println();
         showExpenseList(expenses);
@@ -245,9 +245,10 @@ public class Ui {
      * @param budget       the configured budget
      * @param totalExpense how much has been spent
      */
-    private void showProgressBar(double budget, double totalExpense) {
+    private void showProgressBar(double budget, double totalExpense,  double remainingBalance) {
         if (budget <= 0) {
             System.out.println(NO_BUDGET_LABEL);
+            return;
         }
 
         double ratio = totalExpense / budget;
@@ -293,10 +294,10 @@ public class Ui {
         sb.append(String.format("%.2f%%", pct));
 
         // Over-budget note
-        if (ratio > 1.0) {
-            sb.append("  (Over by ").append(formatCurrency(totalExpense - budget)).append(')');
-        } else {
-            sb.append("  (Remaining: ").append(formatCurrency(budget - totalExpense)).append(')');
+        if (remainingBalance > 0) {
+            sb.append("  (Over by ").append(formatCurrency(remainingBalance)).append(')');
+        } else if (ratio < 0) {
+            sb.append("  (Remaining: ").append(formatCurrency(remainingBalance)).append(')');
         }
 
         System.out.println("Spent: " + formatCurrency(totalExpense) + " / " + formatCurrency(budget));
@@ -324,6 +325,7 @@ public class Ui {
      */
     public void showEmptyExpenseList() {
         System.out.println("No expenses added so far.");
+        System.out.println("Try: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]");
     }
 
     //@@author saheer17
