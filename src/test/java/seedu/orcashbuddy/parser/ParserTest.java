@@ -48,6 +48,11 @@ class ParserTest {
     }
 
     @Test
+    void parse_findNonAsciiDescription_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("find desc/午餐"));
+    }
+
+    @Test
     void parse_edit_returnsEditCommand() {
         assertInstanceOf(EditCommand.class, parser.parse("edit id/1 desc/New Lunch cat/Food"));
     }
@@ -70,5 +75,10 @@ class ParserTest {
     @Test
     void parse_addMissingDescription_returnsInvalidCommand() {
         assertInstanceOf(InvalidCommand.class, parser.parse("add a/10"));
+    }
+
+    @Test
+    void parse_addNonAsciiDescription_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("add a/5 desc/午餐"));
     }
 }

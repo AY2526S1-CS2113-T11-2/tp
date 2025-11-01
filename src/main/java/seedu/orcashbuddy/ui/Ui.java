@@ -24,7 +24,8 @@ public class Ui {
     private static final String ANSI_BLACK = "\u001B[0m";
 
     // ========== Command usage constants ==========
-    private static final String ADD_USAGE = "Invalid format. Use: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]";
+    private static final String ADD_USAGE =
+            "Format reminder: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY] (ASCII characters only).";
     private static final String DELETE_USAGE = "Invalid format. Use: delete EXPENSE_INDEX";
     private static final String SETBUDGET_USAGE = "Invalid format. Use: setbudget a/AMOUNT";
     private static final String MARK_USAGE = "Invalid format. Use: mark EXPENSE_INDEX";

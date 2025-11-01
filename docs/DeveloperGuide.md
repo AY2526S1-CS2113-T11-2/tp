@@ -165,8 +165,8 @@ The Logic component is responsible for making sense of user commands.
 **InputValidator (`InputValidator.java`):**
 - Static utility class providing validation methods for all input types
 - `validateAmount()`: Ensures numeric format and positive value
-- `validateDescription()`: Ensures non-empty and trimmed string
-- `validateCategory()`: Validates format (alphanumeric, starts with letter, reasonable length)
+- `validateDescription()`: Ensures the string is non-empty, trimmed, and ASCII-only
+- `validateCategory()`: Validates format (starts with a letter, ASCII alphanumerics, spaces, or hyphens; reasonable length)
 - `validateIndex()`: Ensures positive integer index for expense operations
 - Throws `OrCashBuddyException` with descriptive messages for validation failures
 
@@ -194,7 +194,7 @@ The Logic component is responsible for making sense of user commands.
 
 1. When `Logic` is called upon to execute a command (via `Main#executeCommand()`), the input is passed to a `Parser` object.
 2. The `Parser` splits the input into a command word and arguments, then uses `ArgumentParser` to extract prefixed values (e.g., `a/`, `desc/`, `cat/`).
-3. `InputValidator` validates each extracted parameter (e.g., ensuring amounts are positive, descriptions are non-empty).
+3. `InputValidator` validates each extracted parameter (e.g., ensuring amounts are positive, descriptions are ASCII-only and non-empty).
 4. The `Parser` creates the appropriate `Command` object (e.g., `AddCommand`, `DeleteCommand`) populated with validated data.
 5. This results in a `Command` object which is executed by `Main` via `command.execute(expenseManager, ui)`.
 6. The command can communicate with the `Model` when it is executed (e.g., to add an expense, mark as paid, or delete an entry). The command may also display results via the `Ui`.
@@ -430,7 +430,7 @@ The add-expense workflow transforms a single line of user input into a populated
 
 1. **Input capture:** `Main` reads the raw line and forwards it to `Parser`.
 2. **Tokenisation:** `Parser` uses `ArgumentParser` to extract the amount, description, and category from the raw input. Required prefixes (`a/`, `desc/`) trigger `OrCashBuddyException` if missing, ensuring we fail fast.
-3. **Validation:** `InputValidator` is then used to validate the extracted values. It converts the amount into a double (rejecting non-positive or malformed numbers), trims the description, and normalises the optional category. Categories must start with an alphabetic character and may include spaces or hyphens; invalid values raise explicit exceptions so `Ui` can present informative error messages.
+3. **Validation:** `InputValidator` is then used to validate the extracted values. It converts the amount into a double (rejecting non-positive or malformed numbers), trims the description while enforcing ASCII-only input, and normalises the optional category. Categories must start with an alphabetic character, remain within ASCII, and may include spaces or hyphens; invalid values raise explicit exceptions so `Ui` can present informative error messages.
 4. **Command creation:** A new `AddCommand` instance is constructed with the validated primitives. All downstream logic remains immutable; there is no shared mutable state between parser and command.
 5. **Execution:** `AddCommand#execute` wraps the primitives into an `Expense`, calls `ExpenseManager#addExpense`, and then defers to `Ui#showNewExpense`.
 

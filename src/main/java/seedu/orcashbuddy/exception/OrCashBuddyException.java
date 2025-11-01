@@ -120,6 +120,16 @@ public class OrCashBuddyException extends Exception {
                         + category);
     }
 
+    /**
+     * Creates an exception for non-ASCII text in user input.
+     *
+     * @param fieldName the name of the field containing non-ASCII characters
+     * @return OrCashBuddyException indicating ASCII-only support
+     */
+    public static OrCashBuddyException nonAsciiInput(String fieldName) {
+        return new OrCashBuddyException(fieldName + " supports ASCII characters only.");
+    }
+
     //@@author saheer17
     // ========== Index-Related Exceptions ==========
 

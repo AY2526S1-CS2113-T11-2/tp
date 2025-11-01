@@ -7,6 +7,7 @@ import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.storage.StorageManager;
 import seedu.orcashbuddy.ui.Ui;
 
+import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.logging.Handler;
@@ -58,7 +59,7 @@ public class Main {
     public void run() {
         ui.showWelcome();
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
         boolean shouldExit = false;
         while (!shouldExit) {
             String input = readInput(scanner);
@@ -110,6 +111,7 @@ public class Main {
         }
         return false;
     }
+
 
     /**
      * Program entry point. Creates a {@link Main} instance and starts the REPL loop.

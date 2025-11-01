@@ -51,6 +51,7 @@ This document explains how to set up the application, describes every available 
 - **Optional parameters** are shown in brackets like `[cat/CATEGORY]`. Do not type the brackets themselves.
 - **Amounts** must be positive decimal numbers (e.g., `12.50`). Invalid inputs will display an informative error message.
 - **Expense indices** are **1-based** and correspond to the numbering shown by the `list` command.
+- **Text fields** (descriptions, categories, search terms) accept **ASCII characters only**. Non-ASCII input such as Chinese or Arabic text is rejected.
 
 ---
 
@@ -75,8 +76,8 @@ Creates a new expense entry with an amount, description, and optional category.
 
 **Parameters:**
 - `AMOUNT` — Positive number up to two decimal places (e.g., `12.50`).
-- `DESCRIPTION` — Short sentence describing the expense.
-- `CATEGORY` (optional) — Tag to group similar expenses. It must start with a letter and can include letters, numbers, spaces, or hyphens (maximum 20 characters). If omitted, the category defaults to `Uncategorized`.
+- `DESCRIPTION` — Short sentence describing the expense using ASCII characters only.
+- `CATEGORY` (optional) — Tag to group similar expenses. It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters). If omitted, the category defaults to `Uncategorized`.
 
 **Examples:**
 ```
@@ -99,8 +100,8 @@ Edit the amount and/or the description and/or the category of an expense. Update
 **Parameters:**
 - `INDEX` — Positive integer index of the expense in the list.
 - `AMOUNT` (optional) — Positive number up to two decimal places (e.g., `12.50`).
-- `DESCRIPTION` (optional) — Short sentence describing the expense.
-- `CATEGORY` (optional) — It must start with a letter and can include letters, numbers, spaces, or hyphens (maximum 20 characters).
+- `DESCRIPTION` (optional) — Short sentence describing the expense using ASCII characters only.
+- `CATEGORY` (optional) — It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters).
 
 **Notes:**
 - You can change multiple attributes of the expense at once.
@@ -197,6 +198,8 @@ unmark 2
 Searches for expenses by category or description keyword, displaying all matching results.
 
 **Format:** `find cat/CATEGORY` or `find desc/DESCRIPTION`
+
+All search keywords must use ASCII characters.
 
 **Examples:**
 ```

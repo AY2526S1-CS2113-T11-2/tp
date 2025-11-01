@@ -103,7 +103,8 @@ public class Parser {
      * @throws OrCashBuddyException if required fields are missing/invalid
      */
     private Command parseAddCommand(String arguments) throws OrCashBuddyException {
-        ArgumentParser argParser = new ArgumentParser(arguments);
+        ArgumentParser argParser = new ArgumentParser(arguments,
+                AMOUNT_PREFIX, DESCRIPTION_PREFIX, CATEGORY_PREFIX);
         String amountStr = argParser.getValue(AMOUNT_PREFIX);
         String descStr = argParser.getValue(DESCRIPTION_PREFIX);
         String categoryStr = argParser.getOptionalValue(CATEGORY_PREFIX);
@@ -196,12 +197,16 @@ public class Parser {
 
         String category = argParser.getOptionalValue(CATEGORY_PREFIX);
         if (category != null && !category.trim().isEmpty()) {
-            return new FindCommand("category", category.trim());
+            String trimmedCategory = category.trim();
+            InputValidator.ensureAscii(trimmedCategory, "Category");
+            return new FindCommand("category", trimmedCategory);
         }
 
         String description = argParser.getOptionalValue(DESCRIPTION_PREFIX);
         if (description != null && !description.trim().isEmpty()) {
-            return new FindCommand("description", description.trim());
+            String trimmedDescription = description.trim();
+            InputValidator.ensureAscii(trimmedDescription, "Description");
+            return new FindCommand("description", trimmedDescription);
         }
 
         throw new OrCashBuddyException("Missing search criteria for 'find' command");

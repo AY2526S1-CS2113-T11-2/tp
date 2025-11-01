@@ -56,24 +56,42 @@ public class InvalidCommand extends Command {
      * @param ui the UI to display contextual usage
      */
     private void showContextualUsage(String errorMessage, Ui ui) {
-        if (errorMessage.contains("'edit'")){
+        System.out.println(errorMessage);
+
+        if (errorMessage.contains("'edit'")) {
             ui.showEditUsage();
-        } else if (errorMessage.contains("find") || errorMessage.contains("search criteria")) {
+            return;
+        }
+
+        if (errorMessage.contains("find") || errorMessage.contains("search criteria")) {
             ui.showFindUsage();
-        } else if (errorMessage.contains("'add'") || errorMessage.contains("desc/") ||
+            return;
+        }
+
+        if (errorMessage.contains("'add'") || errorMessage.contains("desc/") ||
                 errorMessage.contains("Description") || errorMessage.contains("cat/") ||
                 errorMessage.contains("Category")) {
             ui.showAddUsage();
-        } else if (errorMessage.contains("'delete'")) {
+            return;
+        }
+
+        if (errorMessage.contains("'delete'")) {
             ui.showDeleteUsage();
-        } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
+            return;
+        }
+
+        if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
             ui.showSetBudgetUsage();
-        } else if (errorMessage.contains("'mark'")) {
+            return;
+        }
+
+        if (errorMessage.contains("'mark'")) {
             ui.showMarkUsage();
-        } else if (errorMessage.contains("'unmark'")) {
+            return;
+        }
+
+        if (errorMessage.contains("'unmark'")) {
             ui.showUnmarkUsage();
-        } else {
-            System.out.println(errorMessage);
         }
     }
 }
