@@ -104,6 +104,7 @@ Edit the amount and/or the description and/or the category of an expense. Update
 
 **Notes:**
 - You can change multiple attributes of the expense at once.
+- It triggers alerts if the edited amount is higher than original amount when spending approaches or exceeds the budget.
 
 **Example:** 
 ```
@@ -163,6 +164,8 @@ If you have no expenses yet, orCASHbuddy tells you so and suggests adding one wi
 
 ### Marking an Expense as Paid: `mark`
 Flags an expense as settled. Marked expenses contribute to the “total expenses” value displayed by `list`.
+
+It triggers alerts when spending approaches or exceeds the budget.
 
 **Format:** `mark INDEX`
 

@@ -58,6 +58,7 @@ public class EditCommand extends Command {
             LOGGER.log(Level.WARNING, "No expense found at index {0}", index);
             throw new OrCashBuddyException("No expense found at index " + index);
         }
+        double originalAmount=original.getAmount();
         double updatedAmount = (newAmount != null) ? newAmount : original.getAmount();
         String updatedDescription = (newDescription != null) ? newDescription : original.getDescription();
         String updatedCategory = (newCategory != null) ? newCategory : original.getCategory();
@@ -81,7 +82,7 @@ public class EditCommand extends Command {
             ui.showEditedExpense(edited);
         }
         BudgetStatus status = expenseManager.determineBudgetStatus();
-        if (status != BudgetStatus.OK) {
+        if (updatedAmount > originalAmount && status != BudgetStatus.OK) {
             double remainingBalance = expenseManager.getRemainingBalance();
             ui.showBudgetStatus(status, remainingBalance);
         }
