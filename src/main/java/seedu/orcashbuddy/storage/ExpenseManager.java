@@ -187,7 +187,7 @@ public class ExpenseManager implements Serializable {
 
         LOGGER.log(Level.INFO, "Replacing expense at index {0}", index);
 
-        Expense removedExpense = deleteExpense(index);
+        deleteExpense(index);
         expenses.add(index - 1, newExpense);
     }
 
