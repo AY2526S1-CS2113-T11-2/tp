@@ -173,6 +173,13 @@ public class OrCashBuddyException extends Exception {
         if (maxIndex == 0) {
             return emptyExpenseList();
         }
+
+        if (index >= Integer.MAX_VALUE - 1000) {
+            return new OrCashBuddyException(
+                    "Expense index must be between 1 and " + maxIndex +
+                            ". The number entered is too large to process");
+        }
+
         return new OrCashBuddyException(
                 "Expense index must be between 1 and " + maxIndex + ", but got " + index);
     }
