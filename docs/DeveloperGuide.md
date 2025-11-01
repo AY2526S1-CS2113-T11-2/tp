@@ -1621,7 +1621,7 @@ All tests assume the repository has been cloned and Java 17 is available.
 
 1. **Initial launch**
     1. Download the jar file and copy into an empty folder.
-    2. Open a command terminal, navigate to the folder, and run `java -jar orCashBuddy.jar`.<br>
+    2. Open a command terminal, navigate to the folder, and run `java -jar orCASHbuddy.main.jar`.<br>
        **Expected:** Shows welcome banner and help menu. Application is ready for commands.
 
 2. **Shutdown**
@@ -1777,7 +1777,7 @@ All tests assume the repository has been cloned and Java 17 is available.
 1. **Verify auto-save**
     1. Add several expenses and set a budget.
     2. Exit using `bye`.
-    3. Re-launch the application: `java -jar orCashBuddy.jar`<br>
+    3. Re-launch the application: `java -jar orCASHbuddy.main.jar`<br>
        **Expected:** All expenses and budget restored exactly as before.
 
 2. **Dealing with missing data file**
