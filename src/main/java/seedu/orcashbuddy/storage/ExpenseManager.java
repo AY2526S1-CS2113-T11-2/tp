@@ -192,11 +192,6 @@ public class ExpenseManager implements Serializable {
 
         Expense removedExpense = deleteExpense(index);
         expenses.add(index - 1, newExpense);
-
-        if (removedExpense.isMarked()) {
-            newExpense.mark();
-            updateBudgetAfterUnmark(removedExpense);
-        }
     }
 
     //@@author muadzyamani
