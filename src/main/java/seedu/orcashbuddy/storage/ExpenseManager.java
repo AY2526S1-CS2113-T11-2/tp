@@ -175,10 +175,6 @@ public class ExpenseManager implements Serializable {
 
     /**
      * Replaces the expense at the given position with a new expense.
-     * <ul>
-     *   <li>Preserves the marked/unmarked state of the original expense.</li>
-     *   <li>Updates budget totals if needed.</li>
-     * </ul>
      *
      * @param index      the 1-based index of the expense to replace
      * @param newExpense the new expense to insert
@@ -191,7 +187,7 @@ public class ExpenseManager implements Serializable {
 
         LOGGER.log(Level.INFO, "Replacing expense at index {0}", index);
 
-        Expense removedExpense = deleteExpense(index);
+        deleteExpense(index);
         expenses.add(index - 1, newExpense);
     }
 
