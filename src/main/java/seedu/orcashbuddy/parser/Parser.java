@@ -103,7 +103,8 @@ public class Parser {
      * @throws OrCashBuddyException if required fields are missing/invalid
      */
     private Command parseAddCommand(String arguments) throws OrCashBuddyException {
-        ArgumentParser argParser = new ArgumentParser(arguments);
+        ArgumentParser argParser = new ArgumentParser(arguments,
+                AMOUNT_PREFIX, DESCRIPTION_PREFIX, CATEGORY_PREFIX);
         String amountStr = argParser.getValue(AMOUNT_PREFIX);
         String descStr = argParser.getValue(DESCRIPTION_PREFIX);
         String categoryStr = argParser.getOptionalValue(CATEGORY_PREFIX);

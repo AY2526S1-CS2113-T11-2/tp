@@ -3,7 +3,6 @@ package seedu.orcashbuddy.command;
 
 import seedu.orcashbuddy.exception.OrCashBuddyException;
 import seedu.orcashbuddy.expense.Expense;
-import seedu.orcashbuddy.storage.BudgetStatus;
 import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.ui.Ui;
 

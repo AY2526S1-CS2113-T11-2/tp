@@ -66,7 +66,7 @@ public class Main {
     public void run() {
         ui.showWelcome();
 
-        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+        Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8.name());
         boolean shouldExit = false;
         while (!shouldExit) {
             String input = readInput(scanner);

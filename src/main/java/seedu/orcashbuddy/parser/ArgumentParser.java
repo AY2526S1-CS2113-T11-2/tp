@@ -2,10 +2,12 @@ package seedu.orcashbuddy.parser;
 
 import seedu.orcashbuddy.exception.OrCashBuddyException;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Lightweight helper that extracts prefixed argument values from
@@ -23,11 +25,11 @@ import java.util.regex.Pattern;
  * out raw string segments after known prefixes.
  */
 public class ArgumentParser {
-    private static final String[] allPrefixes = {"id/","a/", "desc/", "cat/"};
-    private static final Pattern PREFIX_PATTERN =
-            Pattern.compile("(?<!\\S)(" + String.join("|", allPrefixes) + ")");
+    private static final String[] ALL_PREFIXES = {"id/", "a/", "desc/", "cat/"};
 
     private final String input;
+    private final String[] activePrefixes;
+    private final Pattern prefixPattern;
     private final Map<String, String> parsedValues = new HashMap<>();
     private boolean parsed;
 
@@ -37,7 +39,13 @@ public class ArgumentParser {
      * @param input the raw argument substring after the command word
      */
     public ArgumentParser(String input) {
+        this(input, ALL_PREFIXES);
+    }
+
+    public ArgumentParser(String input, String... allowedPrefixes) {
         this.input = input.trim();
+        this.activePrefixes = normalisePrefixes(allowedPrefixes);
+        this.prefixPattern = buildPrefixPattern(this.activePrefixes);
     }
 
     //@@author limzerui
@@ -92,7 +100,7 @@ public class ArgumentParser {
      * require explicit escaping or duplicate detection, the rule can be tightened here without affecting callers.
      */
     private void parseArguments() {
-        Matcher matcher = PREFIX_PATTERN.matcher(input);
+        Matcher matcher = prefixPattern.matcher(input);
         String activePrefix = null;
         int valueStart = -1;
 
@@ -122,5 +130,23 @@ public class ArgumentParser {
             String value = input.substring(valueStart).trim();
             parsedValues.put(activePrefix, value);
         }
+    }
+
+    private static String[] normalisePrefixes(String[] prefixes) {
+        if (prefixes == null || prefixes.length == 0) {
+            return ALL_PREFIXES;
+        }
+        String[] filtered = Arrays.stream(prefixes)
+                .filter(p -> p != null && !p.isBlank())
+                .distinct()
+                .toArray(String[]::new);
+        return filtered.length == 0 ? ALL_PREFIXES : filtered;
+    }
+
+    private static Pattern buildPrefixPattern(String[] prefixes) {
+        String alternatives = Arrays.stream(prefixes)
+                .map(Pattern::quote)
+                .collect(Collectors.joining("|"));
+        return Pattern.compile("(?<!\\S)(" + alternatives + ")");
     }
 }

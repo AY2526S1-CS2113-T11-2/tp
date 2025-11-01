@@ -40,4 +40,11 @@ class ArgumentParserTest {
         assertEquals("12.50", parser.getValue("a/"));
         assertEquals("venue booking a/12345", parser.getValue("desc/"));
     }
+
+    @Test
+    void unrelatedPrefixInsideValue_respectedWhenNotRecognised() throws Exception {
+        ArgumentParser parser = new ArgumentParser("desc/Room id/1 cat/test", "desc/", "cat/");
+        assertEquals("Room id/1", parser.getValue("desc/"));
+        assertEquals("test", parser.getValue("cat/"));
+    }
 }
