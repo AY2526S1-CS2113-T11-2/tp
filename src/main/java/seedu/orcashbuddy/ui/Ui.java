@@ -325,6 +325,7 @@ public class Ui {
      */
     public void showEmptyExpenseList() {
         System.out.println("No expenses added so far.");
+        System.out.println("Try: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]");
     }
 
     //@@author saheer17
