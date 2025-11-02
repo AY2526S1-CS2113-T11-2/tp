@@ -42,7 +42,7 @@ public class InputValidator {
             throw OrCashBuddyException.invalidAmount(amountStr, e);
         }
 
-        if (amount <= 0) {
+        if (amount < 0.01) {
             throw OrCashBuddyException.amountNotPositive(amountStr);
         }
 

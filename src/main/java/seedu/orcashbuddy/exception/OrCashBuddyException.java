@@ -74,7 +74,7 @@ public class OrCashBuddyException extends Exception {
      * @return OrCashBuddyException for non-positive amount
      */
     public static OrCashBuddyException amountNotPositive(String amountStr) {
-        return new OrCashBuddyException("Amount must be greater than 0: " + amountStr);
+        return new OrCashBuddyException("Amount must be at least $0.01: " + amountStr);
     }
 
     // ========== Description-Related Exceptions ==========
