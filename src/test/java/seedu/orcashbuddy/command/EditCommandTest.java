@@ -4,7 +4,6 @@ package seedu.orcashbuddy.command;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import seedu.orcashbuddy.expense.Expense;
-import seedu.orcashbuddy.storage.BudgetStatus;
 import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.ui.Ui;
 
@@ -28,7 +27,6 @@ class EditCommandTest {
         Expense lastEditedExpense = null;
         Expense lastEmptyEdit = null;
         boolean separatorShown = false;
-        boolean budgetStatusShown = false;
 
         @Override
         public void showEditedExpense(Expense expense) {
@@ -43,11 +41,6 @@ class EditCommandTest {
         @Override
         public void showSeparator() {
             separatorShown = true;
-        }
-
-        @Override
-        public void showBudgetStatus(BudgetStatus status, double remainingBalance) {
-            budgetStatusShown = true;
         }
     }
 

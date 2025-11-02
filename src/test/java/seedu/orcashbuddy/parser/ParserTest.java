@@ -97,4 +97,9 @@ class ParserTest {
     void parse_addNonAsciiDescription_returnsInvalidCommand() {
         assertInstanceOf(InvalidCommand.class, parser.parse("add a/5 desc/午餐"));
     }
+
+    @Test
+    void parse_addInvalidCategory_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("add a/10 desc/test cat/2f"));
+    }
 }

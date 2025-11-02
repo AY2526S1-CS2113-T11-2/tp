@@ -59,4 +59,28 @@ class InvalidCommandTest {
 
         assertTrue(ui.unknownShown);
     }
+
+    @Test
+    void execute_withCategoryValidationError_showsAddUsage() throws Exception {
+        TrackingUi ui = new TrackingUi();
+        InvalidCommand cmd = new InvalidCommand(
+                new OrCashBuddyException("Category must start with a letter and contain only letters, " +
+                        "numbers, spaces, or hyphens: 2f"));
+
+        cmd.execute(new ExpenseManager(), ui);
+
+        // Should show usage even for validation errors
+        assertTrue(ui.addUsageShown);
+    }
+
+    @Test
+    void execute_withMissingPrefix_showsAddUsage() throws Exception {
+        TrackingUi ui = new TrackingUi();
+        InvalidCommand cmd = new InvalidCommand(new OrCashBuddyException("Missing prefix: desc/"));
+
+        cmd.execute(new ExpenseManager(), ui);
+
+        // Should show usage for structural errors like missing prefixes
+        assertTrue(ui.addUsageShown);
+    }
 }
