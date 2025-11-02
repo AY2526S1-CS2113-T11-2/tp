@@ -210,7 +210,7 @@ public class ExpenseManager implements Serializable {
 
         Expense expense = expenses.get(index - 1);
         if (expense.isMarked()) {
-            throw new OrCashBuddyException("This expense is already marked as paid.");
+            throw new OrCashBuddyException("This expense is already marked as paid");
         }
 
         expense.mark();
@@ -237,7 +237,7 @@ public class ExpenseManager implements Serializable {
 
         Expense expense = expenses.get(index - 1);
         if (!expense.isMarked()) {
-            throw new OrCashBuddyException("This expense is already unmarked.");
+            throw new OrCashBuddyException("This expense is already unmarked");
         }
 
         expense.unmark();

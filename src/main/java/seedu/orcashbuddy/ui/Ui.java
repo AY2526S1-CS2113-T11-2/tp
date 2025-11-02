@@ -43,7 +43,7 @@ public class Ui {
     }
 
     /**
-     * Displays a general error message surrounded by separators.
+     * Displays a general error message.
      *
      * @param message the error message to display
      */

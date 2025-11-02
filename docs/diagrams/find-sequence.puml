@@ -34,21 +34,16 @@ alt valid search criteria
     Parser -> FindCommand : new FindCommand("category", "food")
     Parser --> Main : findCommand
 
-else missing search criteria
-    Parser -> ArgumentParser : getOptionalValue("cat/")
-    activate ArgumentParser
-    ArgumentParser --> Parser : null
-    deactivate ArgumentParser
-
-    Parser -> ArgumentParser : getOptionalValue("desc/")
-    activate ArgumentParser
-    ArgumentParser --> Parser : null
-    deactivate ArgumentParser
+else invalid search criteria
+    note right of Parser
+        Either missing criteria,
+        or both cat/ and desc/ provided
+    end note
 
     Parser -->> Parser : throws OrCashBuddyException
 
     create InvalidCommand
-    Parser -> InvalidCommand
+    Parser -> InvalidCommand : new InvalidCommand(exception)
     Parser --> Main : invalidCommand
 end
 
