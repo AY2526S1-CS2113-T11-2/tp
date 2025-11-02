@@ -163,8 +163,9 @@ If you have no expenses yet, orCASHbuddy tells you so and suggests adding one wi
 ![list.png](images/list.png)
 ---
 
+<!-- @@author muadzyamani -->
 ### Marking an Expense as Paid: `mark`
-Flags an expense as settled. Marked expenses contribute to the “total expenses” value displayed by `list`.
+Flags an expense as paid. Marked expenses contribute to the “total expenses” value displayed by `list`.
 
 It triggers alerts when spending approaches or exceeds the budget.
 
@@ -193,7 +194,6 @@ unmark 2
 
 ---
 
-<!-- @@author muadzyamani -->
 ### Finding an Expense: `find`
 Searches for expenses by category or description keyword, displaying all matching results.
 
@@ -205,12 +205,12 @@ All search keywords must use ASCII characters.
 ```
 find cat/facility
 ```
-- Finds all expenses with categories containing "food" 
+- Finds all expenses with categories containing "facility" 
 
 ```
 find desc/poster
 ```
-- Finds all expenses with descriptions containing "lunch"
+- Finds all expenses with descriptions containing "poster"
 
 If no matches are found, orCASHbuddy displays "No expenses found matching [category/description]: [search term]".
 
