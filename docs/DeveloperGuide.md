@@ -1150,18 +1150,28 @@ If no expenses exist, the system provides a clear message instead of failing, en
 
 #### Sorting Logic and Validation
 
-`ExpenseManager#sortExpenses(Ui ui)` performs the sorting operation:
+`ExpenseManager#sortExpenses()` performs the sorting operation and receives sorted expenses of type List<Expense>:
 
 ```java
-public void sortExpenses(Ui ui) {
+    public List<Expense> sortExpenses() {
     if (expenses.isEmpty()) {
-        ui.showListUsage();
-        return;
+        LOGGER.info("Cannot sort expenses - list is empty");
+        return expenses;
     }
 
-    ArrayList<Expense> sortedExpenses = new ArrayList<>(expenses);
+    LOGGER.info("Sorting expenses by amount in descending order");
+    List<Expense> sortedExpenses = new ArrayList<>(expenses);
     sortedExpenses.sort((e1, e2) -> Double.compare(e2.getAmount(), e1.getAmount()));
-    ui.showSortedList(sortedExpenses);
+    assert sortedExpenses.size() == expenses.size() : "Sorted expenses size should match original expenses size";
+    return sortedExpenses;
+}
+```
+`Ui#showSortedExpenseList(sortedExpenses)` displays the sorted list via Ui:
+
+```java
+    public void showSortedExpenseList(List<Expense> sortedExpenses) {
+    System.out.println("Here is your list of sorted expenses, starting with the highest amount:");
+    showNumberedExpenses(sortedExpenses);
 }
 ```
 
@@ -1175,13 +1185,14 @@ public void sortExpenses(Ui ui) {
 
 #### Display Format and User Feedback
 
-`Ui#showSortedList` displays the sorted expenses:
+`Ui#showNumberedExpenses(List<Expense> expenses)` is called by `Ui#showSortedExpenseList(List<Expense> sortedExpenses)` to display the sorted expenses in a listed manner:
 
 ```java
-public void showSortedList(ArrayList<Expense> sortedExpenses) {
-    System.out.println("Here is the list of sorted expenses, starting with the highest amount:");
-    for (int i = 0; i < sortedExpenses.size(); i++) {
-        System.out.println((i + 1) + ". " + sortedExpenses.get(i).formatForDisplay());
+    private void showNumberedExpenses(List<Expense> expenses) {
+    for (int i = 0; i < expenses.size(); i++) {
+        Expense expense = expenses.get(i);
+        assert expense != null : "Expense in list must not be null";
+        System.out.println((i + 1) + ". " + expense.formatForDisplay());
     }
 }
 ```
