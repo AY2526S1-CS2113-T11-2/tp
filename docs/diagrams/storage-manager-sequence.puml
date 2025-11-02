@@ -8,6 +8,7 @@ participant ":Ui" as Ui
 participant ":StorageManager" as StorageManager
 participant ":File" as File
 
+== Load Data Functionality ==
 User -> Main : starts application
 activate Main
 
@@ -70,6 +71,7 @@ end
 StorageManager --> Main : return ExpenseManager
 deactivate StorageManager
 
+== Save Data Functionality ==
 ' Show welcome message
 Main -> Ui : showWelcome()
 activate Ui
