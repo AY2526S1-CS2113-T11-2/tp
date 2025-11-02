@@ -15,6 +15,8 @@ public class Ui {
     // ========== Progress bar constants ==========
     private static final int PROGRESS_BAR_WIDTH = 30;
     private static final String NO_BUDGET_LABEL = "[no budget set]";
+    private static final double BUDGET_WARNING_THRESHOLD = 0.75;
+    private static final double BUDGET_WARNING_OVER = 1.0;
 
     // ANSI color codes for visual budget bar
     private static final String ANSI_GREEN = "\u001B[32m";
@@ -232,9 +234,9 @@ public class Ui {
 
         // Determine string colour based on budget usage
         String colour;
-        if (ratio > 1.0) {
+        if (ratio > BUDGET_WARNING_OVER) {
             colour = ANSI_RED;
-        } else if (ratio >= 0.7) {
+        } else if (ratio >= BUDGET_WARNING_THRESHOLD) {
             colour = ANSI_YELLOW;
         } else {
             colour = ANSI_GREEN;
@@ -278,7 +280,7 @@ public class Ui {
         }
 
         System.out.println("Spent: " + formatCurrency(totalExpense) + " / " + formatCurrency(budget));
-        System.out.println(sb.toString());
+        System.out.println(sb);
     }
 
     /**
