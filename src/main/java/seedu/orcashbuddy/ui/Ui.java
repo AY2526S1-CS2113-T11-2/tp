@@ -295,9 +295,9 @@ public class Ui {
 
         // Over-budget note
         if (remainingBalance > 0) {
-            sb.append("  (Over by ").append(formatCurrency(remainingBalance)).append(')');
-        } else if (ratio < 0) {
             sb.append("  (Remaining: ").append(formatCurrency(remainingBalance)).append(')');
+        } else if (ratio < 0) {
+            sb.append("  (Over by: ").append(formatCurrency(remainingBalance)).append(')');
         }
 
         System.out.println("Spent: " + formatCurrency(totalExpense) + " / " + formatCurrency(budget));
