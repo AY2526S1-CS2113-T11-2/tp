@@ -303,7 +303,7 @@ You can also terminate the program by closing the terminal window, but using `by
 
 **Q: What happens if I mark an expense that's already marked?**
 
-**A:** Nothing changes. The expense remains marked, and the command has no effect. The same applies to unmarking an already unmarked expense.
+**A:** You'll receive a message indicating the expense is already in that state ("This expense is already marked as paid" or "This expense is already unmarked"). No changes are made to the expense or your budget.
 
 ---
 
