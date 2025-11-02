@@ -32,6 +32,16 @@ class InputValidatorTest {
     }
 
     @Test
+    void validateAmount_belowCent_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateAmount("0.009", COMMAND));
+    }
+
+    @Test
+    void validateAmount_minimumCent_allowed() throws Exception {
+        assertEquals(0.01, InputValidator.validateAmount("0.01", COMMAND), 1e-6);
+    }
+
+    @Test
     void validateDescription_valid_returnsTrimmed() throws Exception {
         assertEquals("Lunch", InputValidator.validateDescription("  Lunch  ", COMMAND));
     }
