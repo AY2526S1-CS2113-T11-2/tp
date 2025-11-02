@@ -63,7 +63,7 @@ public class InvalidCommand extends Command {
             return;
         }
 
-        if (errorMessage.contains("find") || errorMessage.contains("search criteria")) {
+        if (errorMessage.contains("find") || errorMessage.contains("search criteria") || errorMessage.contains("search criterion")) {
             ui.showFindUsage();
             return;
         }
