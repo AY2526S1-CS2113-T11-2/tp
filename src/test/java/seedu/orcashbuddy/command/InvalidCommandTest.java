@@ -31,7 +31,7 @@ class InvalidCommandTest {
     }
 
     @Test
-    void execute_withAddException_showsAddUsage() throws Exception {
+    void execute_withAddException_showsAddUsage() {
         TrackingUi ui = new TrackingUi();
         InvalidCommand cmd = new InvalidCommand(new OrCashBuddyException("'add' missing input"));
 
@@ -41,7 +41,7 @@ class InvalidCommandTest {
     }
 
     @Test
-    void execute_withUnmarkException_showsUnmarkUsage() throws Exception {
+    void execute_withUnmarkException_showsUnmarkUsage(){
         TrackingUi ui = new TrackingUi();
         InvalidCommand cmd = new InvalidCommand(new OrCashBuddyException("'unmark' index"));
 
@@ -51,7 +51,7 @@ class InvalidCommandTest {
     }
 
     @Test
-    void execute_withoutException_showsUnknown() throws Exception {
+    void execute_withoutException_showsUnknown() {
         TrackingUi ui = new TrackingUi();
         InvalidCommand cmd = new InvalidCommand();
 
@@ -61,7 +61,7 @@ class InvalidCommandTest {
     }
 
     @Test
-    void execute_withCategoryValidationError_showsAddUsage() throws Exception {
+    void execute_withCategoryValidationError_showsAddUsage() {
         TrackingUi ui = new TrackingUi();
         InvalidCommand cmd = new InvalidCommand(
                 new OrCashBuddyException("Category must start with a letter and contain only letters, " +
@@ -74,7 +74,7 @@ class InvalidCommandTest {
     }
 
     @Test
-    void execute_withMissingPrefix_showsAddUsage() throws Exception {
+    void execute_withMissingPrefix_showsAddUsage() {
         TrackingUi ui = new TrackingUi();
         InvalidCommand cmd = new InvalidCommand(new OrCashBuddyException("Missing prefix: desc/"));
 

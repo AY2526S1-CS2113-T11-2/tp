@@ -41,7 +41,6 @@ public class ExpenseManager implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(ExpenseManager.class.getName());
-    private static final double BUDGET_ALERT_THRESHOLD = 10.0;
     private static final double FLOAT_NOISE_THRESHOLD =0.001;
 
     // ========== State ==========
