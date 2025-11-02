@@ -46,7 +46,7 @@ orCASHbuddy is a Java 17 command-line application that helps students track expe
         
 *   **Contributions to team-based tasks:**
     *   Created and formatted a shared Excel sheet to collaboratively manage and track User Stories by category.
-    *   Maintained the issue tracker.
+    *   Maintained the issue tracker and created product demonstration video.
 
 *   **Review/mentoring contributions:**
     *   Reviewed and mentored teammates on feature design and implementation, e.g. pull request [#55](https://github.com/AY2526S1-CS2113-T11-2/tp/pull/55), where I identified edge cases and suggested refactoring improvements.
