@@ -45,5 +45,7 @@ public class UnmarkCommand extends Command {
         ui.showSeparator();
         ui.showUnmarkedExpense(expense);
         ui.showSeparator();
+        ui.showProgressBar(expenseManager.getBudgetData());
+        ui.showSeparator();
     }
 }

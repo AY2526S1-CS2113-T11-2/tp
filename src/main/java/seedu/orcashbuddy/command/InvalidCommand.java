@@ -51,6 +51,8 @@ public class InvalidCommand extends Command {
 
     /**
      * Shows appropriate usage message based on error context.
+     * For specific validation errors, only the error message is shown.
+     * For structural/parsing errors, a usage hint is also displayed.
      *
      * @param errorMessage the error message from the exception
      * @param ui the UI to display contextual usage
@@ -58,6 +60,12 @@ public class InvalidCommand extends Command {
     private void showContextualUsage(String errorMessage, Ui ui) {
         System.out.println(errorMessage);
 
+        // Check if this is a specific validation error (already informative on its own)
+        if (isSpecificValidationError(errorMessage)) {
+            return; // Don't show generic usage hint for specific validation errors
+        }
+
+        // For structural/parsing errors, show contextual usage hints
         if (errorMessage.contains("'edit'")) {
             ui.showEditUsage();
             return;
@@ -94,5 +102,20 @@ public class InvalidCommand extends Command {
         if (errorMessage.contains("'unmark'")) {
             ui.showUnmarkUsage();
         }
+    }
+
+    /**
+     * Checks if an error message is a specific validation error that is already
+     * informative on its own and doesn't need a generic usage hint.
+     *
+     * @param errorMessage the error message to check
+     * @return true if this is a specific validation error
+     */
+    private boolean isSpecificValidationError(String errorMessage) {
+        return errorMessage.contains("must start with a letter") ||
+                errorMessage.contains("must be at least") ||
+                errorMessage.contains("not a valid decimal") ||
+                errorMessage.contains("too large") ||
+                errorMessage.contains("supports ASCII characters only");
     }
 }

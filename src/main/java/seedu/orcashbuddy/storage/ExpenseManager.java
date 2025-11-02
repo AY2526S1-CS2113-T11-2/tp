@@ -89,6 +89,17 @@ public class ExpenseManager implements Serializable {
         return remainingBalance;
     }
 
+    //@@author aydrienlaw
+    /**
+     * Returns a data transfer object containing budget, total expenses, and remaining balance.
+     * This provides a convenient way to retrieve all budget-related data in a single call.
+     *
+     * @return a {@link BudgetData} object containing current budget information
+     */
+    public BudgetData getBudgetData() {
+        return new BudgetData(budget, totalExpenses, remainingBalance);
+    }
+
     //@@author
     /**
      * Returns the number of expenses currently tracked.
@@ -210,7 +221,7 @@ public class ExpenseManager implements Serializable {
 
         Expense expense = expenses.get(index - 1);
         if (expense.isMarked()) {
-            throw new OrCashBuddyException("This expense is already marked as paid");
+            throw new OrCashBuddyException("This expense is already marked");
         }
 
         expense.mark();
@@ -262,24 +273,6 @@ public class ExpenseManager implements Serializable {
         recalculateRemainingBalance();
 
         LOGGER.log(Level.INFO, "Budget set to {0}", budget);
-    }
-
-    //@@author gumingyoujia
-    /**
-     * Returns a summary of how the user's current spending compares
-     * to their budget. Used by the UI to decide which alert to show.
-     *
-     * @return a {@link BudgetStatus} value such as OK, NEAR, EQUAL, or EXCEEDED
-     */
-    public BudgetStatus determineBudgetStatus() {
-        if (remainingBalance < -FLOAT_NOISE_THRESHOLD) {
-            return BudgetStatus.EXCEEDED;
-        } else if (remainingBalance >= -FLOAT_NOISE_THRESHOLD && remainingBalance <= FLOAT_NOISE_THRESHOLD) {
-            return BudgetStatus.EQUAL;
-        } else if (remainingBalance < BUDGET_ALERT_THRESHOLD + BUDGET_ALERT_THRESHOLD) {
-            return BudgetStatus.NEAR;
-        }
-        return BudgetStatus.OK;
     }
 
     // ========== Display Operations ==========

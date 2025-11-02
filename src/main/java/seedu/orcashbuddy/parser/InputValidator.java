@@ -20,6 +20,12 @@ import seedu.orcashbuddy.expense.Expense;
  */
 public class InputValidator {
 
+    /**
+     * Maximum allowed amount to prevent precision loss with double representation.
+     * Set to 1 trillion, which is well within double precision limits.
+     */
+    private static final double MAX_AMOUNT = 1_000_000_000_000.0; // 1 trillion
+
     //@@author limzerui
 
     /**
@@ -42,8 +48,16 @@ public class InputValidator {
             throw OrCashBuddyException.invalidAmount(amountStr, e);
         }
 
+        if (Double.isNaN(amount) || Double.isInfinite(amount)) {
+            throw OrCashBuddyException.invalidAmount(amountStr, null);
+        }
+
         if (amount < 0.01) {
             throw OrCashBuddyException.amountNotPositive(amountStr);
+        }
+
+        if (amount > MAX_AMOUNT) {
+            throw OrCashBuddyException.amountTooLarge(amountStr);
         }
 
         return amount;
