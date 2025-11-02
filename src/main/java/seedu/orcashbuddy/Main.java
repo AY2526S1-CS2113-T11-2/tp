@@ -103,11 +103,15 @@ public class Main {
         } catch (OrCashBuddyException e) {
             // Handle expected application exceptions
             LOGGER.log(Level.INFO, "Application error: " + e.getMessage());
+            ui.showSeparator();
             ui.showError(e.getMessage());
+            ui.showSeparator();
         } catch (Exception e) {
             // Handle unexpected exceptions
             LOGGER.log(Level.WARNING, "Unexpected error executing command: " + e.getMessage(), e);
+            ui.showSeparator();
             ui.showError("An unexpected error occurred while processing your command.");
+            ui.showSeparator();
         }
         return false;
     }

@@ -49,73 +49,35 @@ public class InvalidCommand extends Command {
         ui.showSeparator();
     }
 
+    //@@author limzerui
     /**
-     * Shows appropriate usage message based on error context.
-     * For specific validation errors, only the error message is shown.
-     * For structural/parsing errors, a usage hint is also displayed.
+     * Shows appropriate usage message based on error message content.
+     * All errors display both the error message and a usage hint based on the command type.
      *
      * @param errorMessage the error message from the exception
      * @param ui the UI to display contextual usage
      */
     private void showContextualUsage(String errorMessage, Ui ui) {
-        System.out.println(errorMessage);
+        ui.showError(errorMessage);
 
-        // Check if this is a specific validation error (already informative on its own)
-        if (isSpecificValidationError(errorMessage)) {
-            return; // Don't show generic usage hint for specific validation errors
-        }
-
-        // For structural/parsing errors, show contextual usage hints
-        if (errorMessage.contains("'edit'")) {
+        // Show usage hints based on string matching
+        if (errorMessage.contains("'edit'") || errorMessage.contains("id/")) {
             ui.showEditUsage();
-            return;
-        }
-
-        if (errorMessage.contains("find") || errorMessage.contains("search criteria") ||
+        } else if (errorMessage.contains("find") || errorMessage.contains("search criteria") ||
                 errorMessage.contains("search criterion")) {
             ui.showFindUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'add'") || errorMessage.contains("desc/") ||
-                errorMessage.contains("Description") || errorMessage.contains("cat/") ||
-                errorMessage.contains("Category")) {
+        } else if (errorMessage.contains("'add'") || errorMessage.contains("a/") ||
+                errorMessage.contains("desc/") || errorMessage.contains("Description") ||
+                errorMessage.contains("cat/") || errorMessage.contains("Category")) {
             ui.showAddUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'delete'")) {
+        } else if (errorMessage.contains("'delete'")) {
             ui.showDeleteUsage();
-            return;
-        }
-
-        if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
+        } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
             ui.showSetBudgetUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'mark'")) {
+        } else if (errorMessage.contains("'mark'")) {
             ui.showMarkUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'unmark'")) {
+        } else if (errorMessage.contains("'unmark'")) {
             ui.showUnmarkUsage();
         }
-    }
-
-    /**
-     * Checks if an error message is a specific validation error that is already
-     * informative on its own and doesn't need a generic usage hint.
-     *
-     * @param errorMessage the error message to check
-     * @return true if this is a specific validation error
-     */
-    private boolean isSpecificValidationError(String errorMessage) {
-        return errorMessage.contains("must start with a letter") ||
-                errorMessage.contains("must be at least") ||
-                errorMessage.contains("not a valid decimal") ||
-                errorMessage.contains("too large") ||
-                errorMessage.contains("supports ASCII characters only");
     }
 }

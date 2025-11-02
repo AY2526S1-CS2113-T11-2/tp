@@ -48,9 +48,7 @@ public class Ui {
      * @param message the error message to display
      */
     public void showError(String message) {
-        showSeparator();
         System.out.println(message);
-        showSeparator();
     }
 
     // ========== Welcome and Goodbye messages ==========
@@ -185,14 +183,29 @@ public class Ui {
      * Displays budget, total spent, remaining balance,
      * a progress bar, and the full list of expenses.
      *
+     * @param budget            the configured budget
+     * @param totalExpense      total spent so far
+     * @param remainingBalance  budget - totalExpense
+     * @param expenses          all tracked expenses
+     */
+    public void showFinancialSummary(double budget, double totalExpense,
+                                     double remainingBalance, List<Expense> expenses) {
+        showProgressBar(budget, totalExpense, remainingBalance);
+
+        System.out.println();
+        showExpenseList(expenses);
+    }
+
+    /**
+     * Displays budget, total spent, remaining balance,
+     * a progress bar, and the full list of expenses.
+     *
      * @param budgetData the budget data containing budget, total expenses, and remaining balance
      * @param expenses   all tracked expenses
      */
     public void showFinancialSummary(BudgetData budgetData, List<Expense> expenses) {
-        showProgressBar(budgetData);
-
-        System.out.println();
-        showExpenseList(expenses);
+        showFinancialSummary(budgetData.budget(), budgetData.totalExpenses(),
+                           budgetData.remainingBalance(), expenses);
     }
 
     //@@author aydrienlaw
