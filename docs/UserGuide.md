@@ -78,6 +78,8 @@ Displays all available commands and their formats in the terminal, providing a q
 
 **Format:** `help`
 
+The `help` command does not accept additional arguments. Supplying extra text (for example, `help later`) will be rejected with an error message.
+
 **Example:**
 ```
 help
@@ -264,6 +266,8 @@ Budget Used: [==============================|]  105.00%  (Over by: $10.00)
 Shows your current budget, total paid expenses, remaining balance, and all recorded expense in the order added.
 
 **Format:** `list`
+
+`list` must be entered on its own. Typing additional words (e.g., `list now`) causes the command to be rejected.
 
 **Example:**
 ```
@@ -487,6 +491,8 @@ Displays all expenses in descending order of amount (largest first). Sorting doe
 
 **Format:** `sort`
 
+`sort` does not accept extra arguments. Inputs such as `sort desc` will be rejected with an error.
+
 **Example:**
 ```
 sort
@@ -524,6 +530,8 @@ Try: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]
 Closes orCASHbuddy gracefully.
 
 **Format:** `bye`
+
+`bye` must be used without any additional text. Adding arguments (for example, `bye later`) results in an error.
 
 **Example:**
 ```
