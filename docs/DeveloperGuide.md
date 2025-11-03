@@ -21,17 +21,17 @@ This Developer Guide (DG) introduces the internals of **orCASHbuddy**, outlines 
    3. [Model Component](#model-component)
    4. [Storage Component](#storage-component)
 4. [Implementation](#implementation)
-   1. [Add Expense Feature](#add-expense-feature)
-   2. [Set Budget Feature](#set-budget-feature)
-   3. [Mark/Unmark Expense Feature](#markunmark-expense-feature)
-   4. [Find Expense Feature](#find-expense-feature)
-   5. [Delete Expense Feature](#delete-expense-feature)
-   6. [Edit Expense Feature](#edit-expense-feature)
-   7. [Sort Expenses Feature](#sort-expenses-feature)
-   8. [Storage Management Feature](#storage-management-feature)
-   9. [Graceful Exit](#graceful-exit)
-   10. [Help Feature](#help-feature)
-   11. [List Feature](#list-feature)
+   1. [Help Feature](#help-feature)
+   2. [Add Expense Feature](#add-expense-feature)
+   3. [Set Budget Feature](#set-budget-feature)
+   4. [List Feature](#list-feature)
+   5. [Edit Expense Feature](#edit-expense-feature)
+   6. [Mark/Unmark Expense Feature](#markunmark-expense-feature)
+   7. [Delete Expense Feature](#delete-expense-feature)
+   8. [Find Expense Feature](#find-expense-feature)
+   9. [Sort Expenses Feature](#sort-expenses-feature)
+   10. [Graceful Exit](#graceful-exit)
+   11. [Storage Management Feature](#storage-management-feature)
 5. [Appendix A: Product Scope](#appendix-a-product-scope)
 6. [Appendix B: User Stories](#appendix-b-user-stories)
 7. [Appendix C: Non-Functional Requirements](#appendix-c-non-functional-requirements)
@@ -410,6 +410,67 @@ This section describes noteworthy implementation details for key features, showi
 
 <br>
 
+<!-- @@author gumingyoujia -->
+### Help Feature
+
+#### Overview
+
+The help feature provides users with a comprehensive list of available commands and their usage formats. This is crucial for user onboarding and as a quick reference for command syntax. The `help` command is designed to be simple and stateless, focusing solely on displaying information.
+
+<br>
+
+#### Sequence Diagram
+![Help Sequence Diagram](images/help-sequence.png)
+
+<br>
+
+#### Control Flow
+
+1. **Input Capture:** `Main` reads the user's command (`help`) and forwards it to `Parser`.
+2. **Command Creation:** `Parser` recognizes the `help` keyword and directly constructs a new `HelpCommand` object. No arguments are expected or parsed for this command.
+3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which calls `ui.showMenu()` between separator calls for visual formatting.
+4. **Data Persistence:** The `help` command is a read-only operation that does not modify application data.
+
+<br>
+
+#### Logic & Validation
+
+The help command requires no validation as it accepts no parameters. The logic is straightforward:
+- No input parsing or validation is performed
+- The command simply delegates to `Ui#showMenu()` to display the pre-formatted command reference
+- Output is wrapped with visual separators for consistency with other commands
+
+<br>
+
+#### Error Handling Strategy
+
+The help command has minimal error handling requirements:
+- No validation errors possible as the command accepts no parameters
+- No exceptions thrown during execution as it only displays static content
+- UI display errors are handled by the `Ui` component itself
+- The command is designed to always succeed, providing a reliable fallback when users need assistance
+
+<br>
+
+#### Design Rationale
+
+The `help` command is intentionally simple and stateless, requiring no arguments. This design provides immediate access to command documentation, reducing the learning curve for new users while serving as a quick reference for experienced users. The simplicity ensures reliability and fast execution.
+
+<br>
+
+#### Alternatives Considered
+
+- **Online documentation:** Rejected to maintain offline functionality and ensure help is always available without internet access.
+- **Interactive tutorial:** Rejected to keep the CLI lightweight and avoid complexity for users who prefer quick reference over guided walkthroughs.
+
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include contextual help for specific commands (`help <command_name>`), searchable help content, and pagination for large command lists.
+
+***
+
 <!-- @@author limzerui -->
 ### Add Expense Feature
 
@@ -595,6 +656,169 @@ Potential enhancements include category-specific budgets, time-based budget peri
 
 ***
 
+<!-- @@author gumingyoujia -->
+### List Feature
+
+#### Overview
+
+The List Feature displays all recorded expenses along with a real-time financial summary. This includes the user's current budget, total spending, remaining balance, and a visual progress bar that indicates budget utilization.
+
+The `list` command serves as a core read-only function within the application, offering users an at-a-glance understanding of their financial status and detailed visibility into all tracked expenses.
+
+<br>
+
+#### Sequence Diagram
+![List Sequence Diagram](images/list-sequence.png)
+
+<br>
+
+#### Control Flow
+
+1. **Input Capture:** `Main` reads the user's command (`list`) and forwards it to `Parser`.
+2. **Command Creation:** `Parser` recognizes the `list` keyword and directly constructs a new `ListCommand` object. No arguments are expected or parsed for this command.
+3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which retrieves financial data from `ExpenseManager` and passes it to `ui.showFinancialSummary()` for display.
+4. **Data Persistence:** The `list` command is a read-only operation that does not modify application data.
+
+<br>
+
+#### Logic & Validation
+
+The list command performs minimal validation, accepting no parameters. The main logic involves:
+- Retrieving budget information via `getBudget()`, `getTotalExpenses()`, and `getRemainingBalance()`
+- Fetching all expenses via `getExpenses()`
+- Calculating the budget usage ratio for progress bar color-coding (green < 75%, yellow 75-100%, red > 100%)
+- Displaying expenses in numbered format or showing "no expenses added" message if the list is empty
+
+<br>
+
+#### Error Handling Strategy
+
+The list command has minimal error handling needs:
+- No user input validation required as the command accepts no parameters
+- Handles empty expense list gracefully by displaying "no expenses added" message
+- Budget division-by-zero scenarios are prevented by displaying "no budget set" when budget is 0
+- All exceptions from `ExpenseManager` data retrieval are allowed to propagate to `Main` for consistent error handling
+- Display errors are managed by the `Ui` component
+
+<br>
+
+#### Design Rationale
+
+The `list` command combines textual and visual feedback through a color-coded progress bar, providing users with both detailed information and at-a-glance status. As a read-only operation, it's safe to execute repeatedly without side effects, encouraging users to check their budget status frequently.
+
+<br>
+
+#### Alternatives Considered
+
+- **Separate budget and expense commands:** Rejected to maintain simplicity and provide a unified financial overview in a single command.
+- **Always showing expenses without budget:** Rejected because users need budget context to understand their financial status.
+
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include pagination for large expense lists, graphical visualization (pie charts, bar graphs), and date range filtering for time-specific summaries.
+
+***
+
+<!-- @@author gumingyoujia -->
+### Edit Expense Feature
+
+#### Overview
+
+The **Edit Expense** feature allows users to modify details of an existing expense, such as the amount, description, or category, without deleting and re-adding it. This makes it easier for users to correct mistakes or update expense information while keeping accurate totals.
+
+<br>
+
+#### Sequence Diagram
+![Edit Sequence Diagram](images/edit-sequence.png)
+
+<br>
+
+#### Control Flow
+
+1. **Input Capture:**  
+   `Main` reads the user's command (`edit`) along with any provided parameters and forwards it to `Parser`.
+
+2. **Input parsing and Command Creation:**  
+   The user inputs an edit command in the form:
+   ```
+   edit /id<index> /a<amount> /desc<description> /cat<category>
+   ```
+   The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
+    - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
+    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
+
+3. **Execution:**  
+   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed — unspecified fields remain the same.
+
+   When `Main` invokes `command.execute(expenseManager, ui)`:
+    - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
+    - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
+    - A new `Expense` object `edited` is constructed with the updated parameters.
+    - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
+    - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
+
+4. **UI Feedback:**
+    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
+    - If the edited expense was marked AND the amount changed, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())` to show the updated budget usage.
+
+5. **Data Persistence:**
+   `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
+
+<br>
+
+#### Logic & Validation
+
+**Validation:** Index validation ensures the provided index corresponds to an existing expense. `InputValidator` validates new amount values (must be positive decimals), descriptions (non-blank ASCII), and categories (naming rules). Null values for optional fields preserve original data, enabling partial edits.
+
+**Replacement Logic:** The `Expense` class uses final fields for immutability. The edit operation creates a new `Expense` object with updated values, replacing the original via `ExpenseManager#replaceExpense`. The marked status is preserved by re-marking the new expense if the original was marked.
+
+**Budget Impact:** If the edited expense is marked AND the amount changed, the command updates budget calculations and displays the progress bar.
+
+**Empty Edit Handling:** If no parameters are provided, `Ui#showEmptyEdit` displays "No changes were made" message.
+
+<br>
+
+#### Error Handling Strategy
+
+Error handling addresses multiple scenarios:
+- **Invalid index:** `InputValidator` and `ExpenseManager#validateIndex` throw `OrCashBuddyException` for non-numeric, negative, or out-of-range indices
+- **Empty list:** Editing when no expenses exist triggers "No expenses to edit" error
+- **Invalid field values:** `InputValidator` rejects negative amounts, empty descriptions, and malformed categories with specific error messages
+- **No changes provided:** Displays informative message rather than throwing error
+- All validation errors are wrapped in `InvalidCommand` for user-friendly display
+
+<br>
+
+#### Design Rationale
+
+##### Why replace instead of mutate?
+The `Expense` class uses `final` fields to preserve immutability and data safety.  
+Creating a new `Expense` object ensures that once created, an instance cannot be corrupted by later edits.
+
+##### Why allow partial updates?
+Users may only want to fix one detail (e.g., typo in description), so optional parameters provide flexibility.
+
+<br>
+
+#### Alternatives Considered
+
+- **In-place mutation:** Rejected because `Expense` uses final fields for immutability; creating new objects ensures data safety
+- **Delete and re-add workflow:** Rejected because it's cumbersome for users and doesn't preserve marked status or list position
+- **Separate commands for each field:** Considered having `editAmount`, `editDesc`, `editCat` commands, but rejected to keep command set concise
+- **Automatic budget recalculation for all edits:** Only recalculates when marked expense amount changes, avoiding unnecessary updates
+
+<br>
+
+#### Future Enhancements
+
+- **Support editing by keyword:** Allow editing by expense name instead of index (e.g., `edit "Lunch"`).
+- **Batch editing:** Enable simultaneous modification of multiple expenses.
+- **Undo/redo support:** Integrate with a command history system for reversible edits.
+
+***
+
 <!-- @@author muadzyamani -->
 ### Mark/Unmark Expense Feature
 
@@ -682,119 +906,14 @@ Potential enhancements include batch mark/unmark operations (e.g., `mark 1 3 5`)
 
 ***
 
-<!-- @@author muadzyamani -->
-### Find Expense Feature
-
-#### Overview
-
-The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`), maintaining consistency with other commands in the application. The design uses separate prefix-based searches rather than a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
-
-The find operation performs case-insensitive substring matching, prioritizing ease of use over exact matching. A search for `cat/food` will match expenses categorized as "Food", "Fast Food", or "Seafood". This approach reduces the cognitive burden of remembering exact category names or descriptions, particularly useful when users manage dozens of expenses across multiple categories. The search is read-only and does not modify any data, making it safe to use exploratively without risk of accidental changes.
-
-<br>
-
-#### Sequence Diagram
-![Find Sequence Diagram](images/find-sequence.png)
-
-<br>
-
-#### Control Flow
-
-1. **Input capture:** `Main` reads the raw command line (`find cat/groceries` or `find desc/lunch`) and forwards it to `Parser`.
-
-2. **Tokenisation and validation:** `Parser` uses `ArgumentParser` to extract optional category and description values:
-    - `ArgumentParser#getOptionalValue("cat/")` returns the category string if present, otherwise `null`.
-    - `ArgumentParser#getOptionalValue("desc/")` returns the description keyword if present, otherwise `null`.
-    - The parser checks category first: if a non-empty category is found, it constructs a category-based `FindCommand`.
-    - If no category is present but a non-empty description exists, it constructs a description-based `FindCommand`.
-    - If both prefixes are absent or contain only whitespace, `Parser` throws `OrCashBuddyException` with message "Missing search criteria for 'find' command".
-
-3. **Command creation:** `Parser` constructs a `FindCommand` with two string parameters:
-    - `searchType`: either `"category"` or `"description"` to indicate the search mode.
-    - `searchTerm`: the trimmed search string extracted from the user input.
-    - The command stores these as immutable fields, deferring actual search logic to execution time.
-
-4. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`:
-    - The command asserts that both `searchType` and `searchTerm` are non-blank, catching any parser violations during development (when assertions are enabled with `-ea`).
-    - The command logs the search operation at INFO level: `"Executing find command: type={searchType}, term={searchTerm}"`.
-    - Based on `searchType`, the command calls either:
-        - `ExpenseManager#findExpensesByCategory(searchTerm)` for category searches
-        - `ExpenseManager#findExpensesByDescription(searchTerm)` for description searches
-    - Both manager methods perform case-insensitive substring matching:
-        - Validate that the search term is non-blank (throws `IllegalArgumentException` if violated, though this should be caught earlier by parser).
-        - Convert the search term to lowercase and trim whitespace: `String searchTerm = keyword.toLowerCase().trim()`.
-        - Iterate through the `expenses` list using an enhanced for loop.
-        - For each expense, retrieve the target field (category or description) and convert it to lowercase.
-        - Check if the field contains the search term as a substring using `String#contains`.
-        - Accumulate matching expenses in a new `ArrayList<Expense>`.
-    - The manager logs the result count at INFO level: `"Found {count} expenses matching {type}: {term}"`.
-    - The manager returns the results list to the command.
-    - The command logs the result count: `"Found {count} matching expenses"`.
-    - The command passes the results list, search term, and search type to `Ui#showFoundExpenses`, which formats and displays the output.
-
-5. **Data persistence:** Since find is a read-only operation, `StorageManager.saveExpenseManager` is called after execution (as per the standard command execution flow in `Main`), but no actual data changes occur.
-
-The sequence diagram in `docs/diagrams/find-sequence.puml` illustrates these interactions, showing the branching logic for category versus description searches within `ExpenseManager`.
-
-<br>
-
-#### Logic & Validation
-
-**Validation:** `Parser` validates that exactly one search prefix (`cat/` or `desc/`) is provided. Empty search terms are rejected with `OrCashBuddyException`.
-
-**Search Algorithm:** Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with case-insensitive substring matching via `String.contains()`. This prioritizes user experience (no need to remember exact capitalization or complete terms) over performance, which is acceptable for personal expense tracking dataset sizes.
-
-**Display Logic:** `Ui#showFoundExpenses` handles three scenarios:
-- No matches found: Displays "No expenses found matching {searchType}: {searchTerm}"
-- One or more matches: Shows count and numbered list (display-only numbering, not actual indices)
-- Marked status is visible in results (`[X]`/`[ ]`), supporting workflows to find unpaid expenses
-
-**Read-Only Operation:** The find command does not modify any data, making it safe for exploratory use.
-
-<br>
-
-#### Error Handling Strategy
-
-Error handling focuses on input validation:
-- **Missing search prefix:** If neither `cat/` nor `desc/` is provided, `ArgumentParser` throws `OrCashBuddyException` with message indicating required prefix
-- **Empty search term:** Parser rejects empty strings after prefix with informative error
-- **Multiple prefixes:** If both `cat/` and `desc/` are provided, parser rejects the command and displays usage
-- All validation errors are wrapped in `InvalidCommand` which displays appropriate usage guidance
-- No runtime exceptions expected during search execution; empty results are handled gracefully
-
-<br>
-
-#### Design Rationale
-
-**Why separate category and description searches?**
-Mutually exclusive searches were chosen over unified searches because users typically know which field they're searching, separate searches produce predictable results, and the command syntax remains simple with only one prefix required.
-
-**Why case-insensitive matching?**
-Case-insensitive matching prevents frustration from capitalization mismatches and handles real-world data entry inconsistencies with negligible performance impact.
-
-<br>
-
-#### Alternatives Considered
-
-- **Search result caching:** Storing the last search results in `ExpenseManager` to support pagination or follow-up operations was considered but rejected because it introduces statefulness that complicates testing and doesn't align with the stateless command model used elsewhere.
-- **Multi-field unified search:** A single `search KEYWORD` command that checks all fields (category, description, amount) was considered but rejected because amount matching requires different logic (numerical comparison vs string matching), and unified results would be harder to interpret.
-
-<br>
-
-#### Future Enhancements
-
-Potential enhancements include combined category/description searches, date-based searching, amount range queries, and batch operations on search results.
-
-***
-
 <!-- @@author saheer17 -->
 ### Delete Expense Feature
 
 #### Overview
 
-The delete workflow enables users to remove unwanted or incorrect expense entries from the list permanently. Users specify the expense to delete using its index in the displayed list (`delete INDEX`), maintaining consistency with other index-based commands such as `mark` and `unmark`. 
+The delete workflow enables users to remove unwanted or incorrect expense entries from the list permanently. Users specify the expense to delete using its index in the displayed list (`delete INDEX`), maintaining consistency with other index-based commands such as `mark` and `unmark`.
 The command updates the stored data automatically, ensuring that the deleted expense no longer appears after restarting the application.
-Deletion is an irreversible operation; once an expense is deleted, it cannot be recovered. The workflow is designed to be deliberate and safe by requiring explicit index input and validating that the list is not empty before proceeding. 
+Deletion is an irreversible operation; once an expense is deleted, it cannot be recovered. The workflow is designed to be deliberate and safe by requiring explicit index input and validating that the list is not empty before proceeding.
 This prevents accidental deletions and ensures data integrity.
 
 <br>
@@ -914,101 +1033,108 @@ Queuing deletions and saving all at exit was considered but rejected in favor of
 
 ***
 
-<!-- @@author gumingyoujia -->
-### Edit Expense Feature
+<!-- @@author muadzyamani -->
+### Find Expense Feature
 
 #### Overview
 
-The **Edit Expense** feature allows users to modify details of an existing expense, such as the amount, description, or category, without deleting and re-adding it. This makes it easier for users to correct mistakes or update expense information while keeping accurate totals.
+The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`), maintaining consistency with other commands in the application. The design uses separate prefix-based searches rather than a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
+
+The find operation performs case-insensitive substring matching, prioritizing ease of use over exact matching. A search for `cat/food` will match expenses categorized as "Food", "Fast Food", or "Seafood". This approach reduces the cognitive burden of remembering exact category names or descriptions, particularly useful when users manage dozens of expenses across multiple categories. The search is read-only and does not modify any data, making it safe to use exploratively without risk of accidental changes.
 
 <br>
 
 #### Sequence Diagram
-![Edit Sequence Diagram](images/edit-sequence.png)
+![Find Sequence Diagram](images/find-sequence.png)
 
 <br>
 
 #### Control Flow
 
-1. **Input Capture:**  
-   `Main` reads the user's command (`edit`) along with any provided parameters and forwards it to `Parser`.
+1. **Input capture:** `Main` reads the raw command line (`find cat/groceries` or `find desc/lunch`) and forwards it to `Parser`.
 
-2. **Input parsing and Command Creation:**  
-   The user inputs an edit command in the form:
-   ```
-   edit /id<index> /a<amount> /desc<description> /cat<category>
-   ```
-   The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
-   - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
-   - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
+2. **Tokenisation and validation:** `Parser` uses `ArgumentParser` to extract optional category and description values:
+    - `ArgumentParser#getOptionalValue("cat/")` returns the category string if present, otherwise `null`.
+    - `ArgumentParser#getOptionalValue("desc/")` returns the description keyword if present, otherwise `null`.
+    - The parser checks category first: if a non-empty category is found, it constructs a category-based `FindCommand`.
+    - If no category is present but a non-empty description exists, it constructs a description-based `FindCommand`.
+    - If both prefixes are absent or contain only whitespace, `Parser` throws `OrCashBuddyException` with message "Missing search criteria for 'find' command".
 
-3. **Execution:**  
-   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed — unspecified fields remain the same.
+3. **Command creation:** `Parser` constructs a `FindCommand` with two string parameters:
+    - `searchType`: either `"category"` or `"description"` to indicate the search mode.
+    - `searchTerm`: the trimmed search string extracted from the user input.
+    - The command stores these as immutable fields, deferring actual search logic to execution time.
 
-   When `Main` invokes `command.execute(expenseManager, ui)`:
-   - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
-   - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
-   - A new `Expense` object `edited` is constructed with the updated parameters.
-   - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
-   - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
+4. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`:
+    - The command asserts that both `searchType` and `searchTerm` are non-blank, catching any parser violations during development (when assertions are enabled with `-ea`).
+    - The command logs the search operation at INFO level: `"Executing find command: type={searchType}, term={searchTerm}"`.
+    - Based on `searchType`, the command calls either:
+        - `ExpenseManager#findExpensesByCategory(searchTerm)` for category searches
+        - `ExpenseManager#findExpensesByDescription(searchTerm)` for description searches
+    - Both manager methods perform case-insensitive substring matching:
+        - Validate that the search term is non-blank (throws `IllegalArgumentException` if violated, though this should be caught earlier by parser).
+        - Convert the search term to lowercase and trim whitespace: `String searchTerm = keyword.toLowerCase().trim()`.
+        - Iterate through the `expenses` list using an enhanced for loop.
+        - For each expense, retrieve the target field (category or description) and convert it to lowercase.
+        - Check if the field contains the search term as a substring using `String#contains`.
+        - Accumulate matching expenses in a new `ArrayList<Expense>`.
+    - The manager logs the result count at INFO level: `"Found {count} expenses matching {type}: {term}"`.
+    - The manager returns the results list to the command.
+    - The command logs the result count: `"Found {count} matching expenses"`.
+    - The command passes the results list, search term, and search type to `Ui#showFoundExpenses`, which formats and displays the output.
 
-4. **UI Feedback:**
-   - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-   - If the edited expense was marked AND the amount changed, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())` to show the updated budget usage.
+5. **Data persistence:** Since find is a read-only operation, `StorageManager.saveExpenseManager` is called after execution (as per the standard command execution flow in `Main`), but no actual data changes occur.
 
-5. **Data Persistence:**
-   `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
+The sequence diagram in `docs/diagrams/find-sequence.puml` illustrates these interactions, showing the branching logic for category versus description searches within `ExpenseManager`.
 
 <br>
 
 #### Logic & Validation
 
-**Validation:** Index validation ensures the provided index corresponds to an existing expense. `InputValidator` validates new amount values (must be positive decimals), descriptions (non-blank ASCII), and categories (naming rules). Null values for optional fields preserve original data, enabling partial edits.
+**Validation:** `Parser` validates that exactly one search prefix (`cat/` or `desc/`) is provided. Empty search terms are rejected with `OrCashBuddyException`.
 
-**Replacement Logic:** The `Expense` class uses final fields for immutability. The edit operation creates a new `Expense` object with updated values, replacing the original via `ExpenseManager#replaceExpense`. The marked status is preserved by re-marking the new expense if the original was marked.
+**Search Algorithm:** Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with case-insensitive substring matching via `String.contains()`. This prioritizes user experience (no need to remember exact capitalization or complete terms) over performance, which is acceptable for personal expense tracking dataset sizes.
 
-**Budget Impact:** If the edited expense is marked AND the amount changed, the command updates budget calculations and displays the progress bar.
+**Display Logic:** `Ui#showFoundExpenses` handles three scenarios:
+- No matches found: Displays "No expenses found matching {searchType}: {searchTerm}"
+- One or more matches: Shows count and numbered list (display-only numbering, not actual indices)
+- Marked status is visible in results (`[X]`/`[ ]`), supporting workflows to find unpaid expenses
 
-**Empty Edit Handling:** If no parameters are provided, `Ui#showEmptyEdit` displays "No changes were made" message.
+**Read-Only Operation:** The find command does not modify any data, making it safe for exploratory use.
 
 <br>
 
 #### Error Handling Strategy
 
-Error handling addresses multiple scenarios:
-- **Invalid index:** `InputValidator` and `ExpenseManager#validateIndex` throw `OrCashBuddyException` for non-numeric, negative, or out-of-range indices
-- **Empty list:** Editing when no expenses exist triggers "No expenses to edit" error
-- **Invalid field values:** `InputValidator` rejects negative amounts, empty descriptions, and malformed categories with specific error messages
-- **No changes provided:** Displays informative message rather than throwing error
-- All validation errors are wrapped in `InvalidCommand` for user-friendly display
+Error handling focuses on input validation:
+- **Missing search prefix:** If neither `cat/` nor `desc/` is provided, `ArgumentParser` throws `OrCashBuddyException` with message indicating required prefix
+- **Empty search term:** Parser rejects empty strings after prefix with informative error
+- **Multiple prefixes:** If both `cat/` and `desc/` are provided, parser rejects the command and displays usage
+- All validation errors are wrapped in `InvalidCommand` which displays appropriate usage guidance
+- No runtime exceptions expected during search execution; empty results are handled gracefully
 
 <br>
 
 #### Design Rationale
 
-##### Why replace instead of mutate?
-The `Expense` class uses `final` fields to preserve immutability and data safety.  
-Creating a new `Expense` object ensures that once created, an instance cannot be corrupted by later edits.
+**Why separate category and description searches?**
+Mutually exclusive searches were chosen over unified searches because users typically know which field they're searching, separate searches produce predictable results, and the command syntax remains simple with only one prefix required.
 
-##### Why allow partial updates?
-Users may only want to fix one detail (e.g., typo in description), so optional parameters provide flexibility.
+**Why case-insensitive matching?**
+Case-insensitive matching prevents frustration from capitalization mismatches and handles real-world data entry inconsistencies with negligible performance impact.
 
 <br>
 
 #### Alternatives Considered
 
-- **In-place mutation:** Rejected because `Expense` uses final fields for immutability; creating new objects ensures data safety
-- **Delete and re-add workflow:** Rejected because it's cumbersome for users and doesn't preserve marked status or list position
-- **Separate commands for each field:** Considered having `editAmount`, `editDesc`, `editCat` commands, but rejected to keep command set concise
-- **Automatic budget recalculation for all edits:** Only recalculates when marked expense amount changes, avoiding unnecessary updates
+- **Search result caching:** Storing the last search results in `ExpenseManager` to support pagination or follow-up operations was considered but rejected because it introduces statefulness that complicates testing and doesn't align with the stateless command model used elsewhere.
+- **Multi-field unified search:** A single `search KEYWORD` command that checks all fields (category, description, amount) was considered but rejected because amount matching requires different logic (numerical comparison vs string matching), and unified results would be harder to interpret.
 
 <br>
 
 #### Future Enhancements
 
-- **Support editing by keyword:** Allow editing by expense name instead of index (e.g., `edit "Lunch"`).
-- **Batch editing:** Enable simultaneous modification of multiple expenses.
-- **Undo/redo support:** Integrate with a command history system for reversible edits.
+Potential enhancements include combined category/description searches, date-based searching, amount range queries, and batch operations on search results.
 
 ***
 
@@ -1146,6 +1272,70 @@ Considered (e.g., sort by amount then category), but initially implemented simpl
 
 ***
 
+<!-- @@author limzerui -->
+### Graceful Exit
+
+#### Overview
+
+Exiting the application used to depend on `Main` inspecting raw input (checking for `bye`). This tightly coupled the loop to a single keyword and prevented other commands from influencing shutdown behaviour. The redesigned flow delegates responsibility to `ByeCommand`, aligning termination with the rest of the command framework and paving the way for richer exit scenarios (e.g., confirm prompts, autosave).
+
+<br>
+
+#### Sequence Diagram
+![Bye Sequence Diagram](images/bye_feature.png)
+
+<br>
+
+#### Control Flow
+
+1. **Parsing:** When the user enters `bye`, `Parser` instantly returns a `ByeCommand`. Any trailing arguments result in an `OrCashBuddyException`, protecting against typos such as `bye later`.
+2. **Execution:** `Main` calls `command.execute(expenseManager, ui)` without special casing. `ByeCommand` logs a concise INFO message and calls `Ui#showGoodbye`.
+3. **Exit signalling:** After execution, `Main` queries `command.isExit()`, which `ByeCommand` overrides to return `true`. Once `Main` receives `true`, the run loop terminates cleanly.
+
+The sequence diagram stored at `docs/diagrams/bye-sequence.puml` captures this flow, showing that no other component interacts with the exit decision, preserving a single exit pathway.
+
+<br>
+
+#### Logic & Validation
+
+The bye command performs minimal validation:
+- Rejects any trailing arguments (e.g., `bye later` throws `OrCashBuddyException`)
+- Implements the `isExit()` method to return `true`, signaling termination to `Main`
+- No other validation is required as the command accepts no parameters
+
+The exit mechanism uses a boolean flag rather than direct `System.exit()` calls, allowing the main loop to terminate gracefully and ensuring proper cleanup of resources.
+
+<br>
+
+#### Error Handling Strategy
+
+Error handling for the bye command is straightforward:
+- Any trailing arguments trigger `OrCashBuddyException` with message indicating the command takes no parameters
+- Exceptions are caught in `Parser` and wrapped in `InvalidCommand` for user-friendly error display
+- No runtime exceptions expected during execution as the command has no side effects
+- The `isExit()` boolean flag prevents abrupt termination, allowing `Main` to clean up resources properly
+
+<br>
+
+#### Design Rationale
+
+The `ByeCommand` integrates exit logic into the command framework rather than using special-case handling in `Main`. This design improves testability (unit tests can instantiate `ByeCommand` directly) and extensibility (future persistence operations can be added to the command without affecting other components).
+
+<br>
+
+#### Alternatives Considered
+
+- **Direct system exit:** Calling `System.exit(0)` inside `ByeCommand` was rejected because it complicates testing and bypasses finally blocks or future shutdown hooks.
+- **Flag in Main:** Using a mutable boolean in `Main` was rejected because it requires special-case handling and scatters exit logic.
+
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include confirmation prompts before exit (especially if unsaved changes exist), pre-exit cleanup operations, and graceful shutdown of background threads or network connections if added in future versions.
+
+***
+
 <!-- @@author saheer17 -->
 ### Storage Management Feature
 
@@ -1252,196 +1442,6 @@ Error handling ensures robustness without crashing the application:
 * **Backup Mechanism:** Maintain a versioned backup of previous `ExpenseManager` states.
 * **Encryption:** Secure sensitive data by encrypting the serialized file.
 * **Incremental Save:** Save only modified parts of `ExpenseManager` instead of the whole object.
-
-***
-
-<!-- @@author limzerui -->
-### Graceful Exit
-
-#### Overview
-
-Exiting the application used to depend on `Main` inspecting raw input (checking for `bye`). This tightly coupled the loop to a single keyword and prevented other commands from influencing shutdown behaviour. The redesigned flow delegates responsibility to `ByeCommand`, aligning termination with the rest of the command framework and paving the way for richer exit scenarios (e.g., confirm prompts, autosave).
-
-<br>
-
-#### Sequence Diagram
-![Bye Sequence Diagram](images/bye_feature.png)
-
-<br>
-
-#### Control Flow
-
-1. **Parsing:** When the user enters `bye`, `Parser` instantly returns a `ByeCommand`. Any trailing arguments result in an `OrCashBuddyException`, protecting against typos such as `bye later`.
-2. **Execution:** `Main` calls `command.execute(expenseManager, ui)` without special casing. `ByeCommand` logs a concise INFO message and calls `Ui#showGoodbye`.
-3. **Exit signalling:** After execution, `Main` queries `command.isExit()`, which `ByeCommand` overrides to return `true`. Once `Main` receives `true`, the run loop terminates cleanly.
-
-The sequence diagram stored at `docs/diagrams/bye-sequence.puml` captures this flow, showing that no other component interacts with the exit decision, preserving a single exit pathway.
-
-<br>
-
-#### Logic & Validation
-
-The bye command performs minimal validation:
-- Rejects any trailing arguments (e.g., `bye later` throws `OrCashBuddyException`)
-- Implements the `isExit()` method to return `true`, signaling termination to `Main`
-- No other validation is required as the command accepts no parameters
-
-The exit mechanism uses a boolean flag rather than direct `System.exit()` calls, allowing the main loop to terminate gracefully and ensuring proper cleanup of resources.
-
-<br>
-
-#### Error Handling Strategy
-
-Error handling for the bye command is straightforward:
-- Any trailing arguments trigger `OrCashBuddyException` with message indicating the command takes no parameters
-- Exceptions are caught in `Parser` and wrapped in `InvalidCommand` for user-friendly error display
-- No runtime exceptions expected during execution as the command has no side effects
-- The `isExit()` boolean flag prevents abrupt termination, allowing `Main` to clean up resources properly
-
-<br>
-
-#### Design Rationale
-
-The `ByeCommand` integrates exit logic into the command framework rather than using special-case handling in `Main`. This design improves testability (unit tests can instantiate `ByeCommand` directly) and extensibility (future persistence operations can be added to the command without affecting other components).
-
-<br>
-
-#### Alternatives Considered
-
-- **Direct system exit:** Calling `System.exit(0)` inside `ByeCommand` was rejected because it complicates testing and bypasses finally blocks or future shutdown hooks.
-- **Flag in Main:** Using a mutable boolean in `Main` was rejected because it requires special-case handling and scatters exit logic.
-
-<br>
-
-#### Future Enhancements
-
-Potential enhancements include confirmation prompts before exit (especially if unsaved changes exist), pre-exit cleanup operations, and graceful shutdown of background threads or network connections if added in future versions.
-
-***
-
-<!-- @@author gumingyoujia -->
-### Help Feature
-
-#### Overview
-
-The help feature provides users with a comprehensive list of available commands and their usage formats. This is crucial for user onboarding and as a quick reference for command syntax. The `help` command is designed to be simple and stateless, focusing solely on displaying information.
-
-<br>
-
-#### Sequence Diagram
-![Help Sequence Diagram](images/help-sequence.png)
-
-<br>
-
-#### Control Flow
-
-1. **Input Capture:** `Main` reads the user's command (`help`) and forwards it to `Parser`.
-2. **Command Creation:** `Parser` recognizes the `help` keyword and directly constructs a new `HelpCommand` object. No arguments are expected or parsed for this command.
-3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which calls `ui.showMenu()` between separator calls for visual formatting.
-4. **Data Persistence:** The `help` command is a read-only operation that does not modify application data.
-
-<br>
-
-#### Logic & Validation
-
-The help command requires no validation as it accepts no parameters. The logic is straightforward:
-- No input parsing or validation is performed
-- The command simply delegates to `Ui#showMenu()` to display the pre-formatted command reference
-- Output is wrapped with visual separators for consistency with other commands
-
-<br>
-
-#### Error Handling Strategy
-
-The help command has minimal error handling requirements:
-- No validation errors possible as the command accepts no parameters
-- No exceptions thrown during execution as it only displays static content
-- UI display errors are handled by the `Ui` component itself
-- The command is designed to always succeed, providing a reliable fallback when users need assistance
-
-<br>
-
-#### Design Rationale
-
-The `help` command is intentionally simple and stateless, requiring no arguments. This design provides immediate access to command documentation, reducing the learning curve for new users while serving as a quick reference for experienced users. The simplicity ensures reliability and fast execution.
-
-<br>
-
-#### Alternatives Considered
-
-- **Online documentation:** Rejected to maintain offline functionality and ensure help is always available without internet access.
-- **Interactive tutorial:** Rejected to keep the CLI lightweight and avoid complexity for users who prefer quick reference over guided walkthroughs.
-
-<br>
-
-#### Future Enhancements
-
-Potential enhancements include contextual help for specific commands (`help <command_name>`), searchable help content, and pagination for large command lists.
-
-***
-
-<!-- @@author gumingyoujia -->
-### List Feature
-
-#### Overview
-
-The List Feature displays all recorded expenses along with a real-time financial summary. This includes the user's current budget, total spending, remaining balance, and a visual progress bar that indicates budget utilization.
-
-The `list` command serves as a core read-only function within the application, offering users an at-a-glance understanding of their financial status and detailed visibility into all tracked expenses.
-
-<br>
-
-#### Sequence Diagram
-![List Sequence Diagram](images/list-sequence.png)
-
-<br>
-
-#### Control Flow
-
-1. **Input Capture:** `Main` reads the user's command (`list`) and forwards it to `Parser`.
-2. **Command Creation:** `Parser` recognizes the `list` keyword and directly constructs a new `ListCommand` object. No arguments are expected or parsed for this command.
-3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which retrieves financial data from `ExpenseManager` and passes it to `ui.showFinancialSummary()` for display.
-4. **Data Persistence:** The `list` command is a read-only operation that does not modify application data.
-
-<br>
-
-#### Logic & Validation
-
-The list command performs minimal validation, accepting no parameters. The main logic involves:
-- Retrieving budget information via `getBudget()`, `getTotalExpenses()`, and `getRemainingBalance()`
-- Fetching all expenses via `getExpenses()`
-- Calculating the budget usage ratio for progress bar color-coding (green < 75%, yellow 75-100%, red > 100%)
-- Displaying expenses in numbered format or showing "no expenses added" message if the list is empty
-
-<br>
-
-#### Error Handling Strategy
-
-The list command has minimal error handling needs:
-- No user input validation required as the command accepts no parameters
-- Handles empty expense list gracefully by displaying "no expenses added" message
-- Budget division-by-zero scenarios are prevented by displaying "no budget set" when budget is 0
-- All exceptions from `ExpenseManager` data retrieval are allowed to propagate to `Main` for consistent error handling
-- Display errors are managed by the `Ui` component
-
-<br>
-
-#### Design Rationale
-
-The `list` command combines textual and visual feedback through a color-coded progress bar, providing users with both detailed information and at-a-glance status. As a read-only operation, it's safe to execute repeatedly without side effects, encouraging users to check their budget status frequently.
-
-<br>
-
-#### Alternatives Considered
-
-- **Separate budget and expense commands:** Rejected to maintain simplicity and provide a unified financial overview in a single command.
-- **Always showing expenses without budget:** Rejected because users need budget context to understand their financial status.
-
-<br>
-
-#### Future Enhancements
-
-Potential enhancements include pagination for large expense lists, graphical visualization (pie charts, bar graphs), and date range filtering for time-specific summaries.
 
 ---
 
