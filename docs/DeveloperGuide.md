@@ -1052,7 +1052,7 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
    - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
-
+![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
 3. **Execution:**  
    The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
@@ -1062,11 +1062,11 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    - A new `Expense` object `edited` is constructed with the updated parameters.
    - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
    - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
-
+![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
 4. **UI Feedback:**
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
    - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
-
+![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
 5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 

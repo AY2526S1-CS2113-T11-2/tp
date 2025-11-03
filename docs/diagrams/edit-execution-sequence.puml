@@ -1,0 +1,46 @@
+@startuml
+!theme vibrant
+title Edit Command Sequence Diagram – Execution Phase
+
+== Editing Logic and ExpenseManager Interaction ==
+
+
+participant ":Main" as Main
+participant ":EditCommand" as EditCommand
+participant ":ExpenseManager" as ExpenseManager
+participant ":Expense" as Expense
+
+Main -> EditCommand : execute(expenseManager, ui)
+activate EditCommand
+
+EditCommand -> ExpenseManager : getExpense(1)
+activate ExpenseManager
+ExpenseManager --> EditCommand : Expense(original)
+deactivate ExpenseManager
+
+EditCommand -> Expense : getAmount(), getDescription(), getCategory(), isMarked()
+activate Expense
+Expense --> EditCommand : original details
+deactivate Expense
+
+EditCommand -> EditCommand : compute updated fields\n(newAmount,newDesc,newCat)
+
+create Expense
+EditCommand -> Expense : new Expense(15.0, "dinner", "food")
+
+EditCommand -> ExpenseManager : replaceExpense(1, edited)
+activate ExpenseManager
+ExpenseManager -> ExpenseManager : deleteExpense(1)
+ExpenseManager -> ExpenseManager : add(index-1, edited)
+ExpenseManager --> EditCommand
+deactivate ExpenseManager
+
+opt originally marked
+    EditCommand -> ExpenseManager : markExpense(1)
+    activate ExpenseManager
+    ExpenseManager --> EditCommand
+    deactivate ExpenseManager
+end
+
+deactivate EditCommand
+@enduml

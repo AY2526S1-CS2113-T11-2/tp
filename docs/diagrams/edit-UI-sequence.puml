@@ -1,0 +1,54 @@
+@startuml
+!theme vibrant
+title Edit Command Sequence Diagram – UI Feedback Phase
+
+== User Feedback and Budget Display ==
+
+actor User
+participant ":EditCommand" as EditCommand
+participant ":ExpenseManager" as ExpenseManager
+participant ":Ui" as Ui
+
+activate EditCommand
+
+EditCommand -> Ui : showSeparator()
+activate Ui
+Ui --> User : displays separator line
+deactivate Ui
+
+alt no fields changed
+    EditCommand -> Ui : showEmptyEdit(edited)
+    activate Ui
+    Ui --> User : "No changes were made to the expense"
+    deactivate Ui
+else fields updated
+    EditCommand -> Ui : showEditedExpense(edited)
+    activate Ui
+    Ui --> User : "Edited Expense" details
+    deactivate Ui
+end
+
+opt edited expense is marked and amount changed
+    EditCommand -> Ui : showSeparator()
+    activate Ui
+    Ui --> User : displays separator line
+    deactivate Ui
+
+    EditCommand -> ExpenseManager : getBudgetData()
+    activate ExpenseManager
+    ExpenseManager --> EditCommand : BudgetData(budget, total, remaining)
+    deactivate ExpenseManager
+
+    EditCommand -> Ui : showProgressBar(budgetData)
+    activate Ui
+    Ui --> User : updated budget progress
+    deactivate Ui
+end
+
+EditCommand -> Ui : showSeparator()
+activate Ui
+Ui --> User : displays separator line
+deactivate Ui
+
+deactivate EditCommand
+@enduml
