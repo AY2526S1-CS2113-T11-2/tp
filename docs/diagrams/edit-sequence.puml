@@ -2,132 +2,87 @@
 !theme vibrant
 actor User
 participant ":Main" as Main
-participant ":StorageManager" as StorageManager
 participant ":Parser" as Parser
 participant ":ArgumentParser" as ArgumentParser
 participant ":InputValidator" as InputValidator
 participant ":EditCommand" as EditCommand
-participant ":Expense" as Expense
 participant ":ExpenseManager" as ExpenseManager
 participant ":Ui" as Ui
 
-activate Main
-Main -> StorageManager : loadExpenseManager(ui)
-activate StorageManager
-StorageManager --> Main : expenseManager
-deactivate StorageManager
-
 User -> Main : enters "edit id/1 a/15 desc/dinner cat/food"
+activate Main
 
 Main -> Parser : parse("edit id/1 a/15 desc/dinner cat/food")
 activate Parser
 
 create ArgumentParser
-Parser -> ArgumentParser : "id/1 a/15 desc/dinner cat/food"
+Parser -> ArgumentParser : extract prefixes
 activate ArgumentParser
 Parser -> ArgumentParser : getValue("id/")
 ArgumentParser --> Parser : "1"
-
-opt optional fields
-    Parser -> ArgumentParser : getOptionalValue("a/")
-    ArgumentParser --> Parser : "15"
-
-    Parser -> ArgumentParser : getOptionalValue("desc/")
-    ArgumentParser --> Parser : "dinner"
-
-    Parser -> ArgumentParser : getOptionalValue("cat/")
-    ArgumentParser --> Parser : "food"
-end
+Parser -> ArgumentParser : getOptionalValue("a/")
+ArgumentParser --> Parser : "15"
+Parser -> ArgumentParser : getOptionalValue("desc/")
+ArgumentParser --> Parser : "dinner"
+Parser -> ArgumentParser : getOptionalValue("cat/")
+ArgumentParser --> Parser : "food"
 deactivate ArgumentParser
 
-Parser -> InputValidator : validateIndex("1", "edit")
+Parser -> InputValidator : validate id/amount/description/category
 activate InputValidator
-InputValidator --> Parser : 1
-deactivate InputValidator
 
-Parser -> InputValidator : validateAmount("15", "edit")
-activate InputValidator
-InputValidator --> Parser : 15.0
-deactivate InputValidator
+alt validation succeeds
+    InputValidator --> Parser : validation OK
+    deactivate InputValidator
 
-Parser -> InputValidator : validateDescription("dinner", "edit")
-activate InputValidator
-InputValidator --> Parser : "dinner"
-deactivate InputValidator
+    create EditCommand
+    Parser -> EditCommand : (1, 15.0, "dinner", "food")
+    Parser --> Main : EditCommand
+    deactivate Parser
 
-Parser -> InputValidator : validateCategory("food", "edit")
-activate InputValidator
-InputValidator --> Parser : "food"
-deactivate InputValidator
+    Main -> EditCommand : execute(expenseManager, ui)
+    activate EditCommand
 
-create EditCommand
-Parser -> EditCommand : (1, 15.0, "dinner", "food")
-Parser --> Main : editCommand
-deactivate Parser
+    EditCommand -> ExpenseManager : getExpense(1)
+    activate ExpenseManager
+    ExpenseManager --> EditCommand : Expense(original)
+    deactivate ExpenseManager
 
-Main -> EditCommand : execute(expenseManager, ui)
-activate EditCommand
+    EditCommand -> ExpenseManager : replaceExpense(1, edited)
+    activate ExpenseManager
+    deactivate ExpenseManager
 
-EditCommand -> ExpenseManager : getExpense(1)
-activate ExpenseManager
-ExpenseManager --> EditCommand : Expense(original)
-deactivate ExpenseManager
+    alt no fields changed
+        EditCommand -> Ui : showEmptyEdit(...)
+        activate Ui
+        Ui --> User : "No changes made"
+        deactivate Ui
+    else fields updated
+        EditCommand -> Ui : showEditedExpense(...)
+        activate Ui
+        Ui --> User : updated expense info
+        deactivate Ui
 
-EditCommand -> Expense : getAmount(), getDescription(), getCategory(), isMarked()
-activate Expense
-Expense --> EditCommand : returns original details
-deactivate Expense
+        opt expense marked and amount changed
+            EditCommand -> Ui : showProgressBar(...)
+            activate Ui
+            Ui --> User : updated budget progress
+            deactivate Ui
+        end
+    end
 
-create Expense
-EditCommand -> Expense : new Expense(15.0, "dinner", "food")
+    deactivate EditCommand
+else validation fails
+    InputValidator -->> Parser : OrCashBuddyException
+    deactivate InputValidator
+    Parser --> Main : InvalidCommand
+    deactivate Parser
 
-EditCommand -> ExpenseManager : replaceExpense(1, newExpense)
-activate ExpenseManager
-ExpenseManager -> ExpenseManager : deleteExpense(1)
-ExpenseManager -> ExpenseManager : add(index-1, newExpense)
-ExpenseManager --> EditCommand
-deactivate ExpenseManager
-
-EditCommand -> ExpenseManager : markExpense(1) [if originally marked]
-activate ExpenseManager
-ExpenseManager --> EditCommand
-deactivate ExpenseManager
-
-EditCommand -> Ui : showSeparator()
-activate Ui
-deactivate Ui
-
-alt no fields changed (newAmount == null && newDescription == null && newCategory == null)
-    EditCommand -> Ui : showEmptyEdit(edited)
+    Main -> Ui : showError(...)
     activate Ui
-    Ui --> User : displays "No changes made" message
-    deactivate Ui
-else fields updated
-    EditCommand -> Ui : showEditedExpense(edited)
-    activate Ui
-    Ui --> User : displays updated expense details
+    Ui --> User : error message
     deactivate Ui
 end
-
-EditCommand -> ExpenseManager : determineBudgetStatus()
-activate ExpenseManager
-ExpenseManager --> EditCommand : BudgetStatus
-deactivate ExpenseManager
-
-EditCommand -> Ui : showBudgetStatus(status, remainingBalance) [if not OK]
-activate Ui
-Ui --> User : displays budget warning
-deactivate Ui
-
-EditCommand -> Ui : showSeparator()
-activate Ui
-deactivate Ui
-
-deactivate EditCommand
-
-Main -> StorageManager : saveExpenseManager(expenseManager, ui)
-activate StorageManager
-deactivate StorageManager
 
 deactivate Main
 @enduml

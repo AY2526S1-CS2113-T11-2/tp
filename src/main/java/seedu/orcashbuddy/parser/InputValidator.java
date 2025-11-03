@@ -67,6 +67,8 @@ public class InputValidator {
             throw OrCashBuddyException.amountTooLarge(amountStr);
         }
 
+        amount = Math.floor(amount * 100.0) / 100.0;
+
         return amount;
     }
 

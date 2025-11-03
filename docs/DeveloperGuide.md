@@ -1053,41 +1053,33 @@ The find operation performs case-insensitive substring matching, prioritizing ea
 
 1. **Input capture:** `Main` reads the raw command line (`find cat/groceries` or `find desc/lunch`) and forwards it to `Parser`.
 
-2. **Tokenisation and validation:** `Parser` uses `ArgumentParser` to extract optional category and description values:
-    - `ArgumentParser#getOptionalValue("cat/")` returns the category string if present, otherwise `null`.
-    - `ArgumentParser#getOptionalValue("desc/")` returns the description keyword if present, otherwise `null`.
-    - The parser checks category first: if a non-empty category is found, it constructs a category-based `FindCommand`.
-    - If no category is present but a non-empty description exists, it constructs a description-based `FindCommand`.
-    - If both prefixes are absent or contain only whitespace, `Parser` throws `OrCashBuddyException` with message "Missing search criteria for 'find' command".
+2. **Input parsing and Command Creation:**  
+   The user inputs an edit command in the form:
+   ```
+   edit /id<index> /a<amount> /desc<description> /cat<category>
+   ```
+   The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
+   - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
+   - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
+![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
+3. **Execution:**  
+   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
-3. **Command creation:** `Parser` constructs a `FindCommand` with two string parameters:
-    - `searchType`: either `"category"` or `"description"` to indicate the search mode.
-    - `searchTerm`: the trimmed search string extracted from the user input.
-    - The command stores these as immutable fields, deferring actual search logic to execution time.
+   When `Main` invokes `command.execute(expenseManager, ui)`:
+   - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
+   - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
+   - A new `Expense` object `edited` is constructed with the updated parameters.
+   - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
+   - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
+![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
+4. **UI Feedback:**
+   - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
+   - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
+![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
+5. **Data Persistence:**  
+   `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 
-4. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`:
-    - The command asserts that both `searchType` and `searchTerm` are non-blank, catching any parser violations during development (when assertions are enabled with `-ea`).
-    - The command logs the search operation at INFO level: `"Executing find command: type={searchType}, term={searchTerm}"`.
-    - Based on `searchType`, the command calls either:
-        - `ExpenseManager#findExpensesByCategory(searchTerm)` for category searches
-        - `ExpenseManager#findExpensesByDescription(searchTerm)` for description searches
-    - Both manager methods perform case-insensitive substring matching:
-        - Validate that the search term is non-blank (throws `IllegalArgumentException` if violated, though this should be caught earlier by parser).
-        - Convert the search term to lowercase and trim whitespace: `String searchTerm = keyword.toLowerCase().trim()`.
-        - Iterate through the `expenses` list using an enhanced for loop.
-        - For each expense, retrieve the target field (category or description) and convert it to lowercase.
-        - Check if the field contains the search term as a substring using `String#contains`.
-        - Accumulate matching expenses in a new `ArrayList<Expense>`.
-    - The manager logs the result count at INFO level: `"Found {count} expenses matching {type}: {term}"`.
-    - The manager returns the results list to the command.
-    - The command logs the result count: `"Found {count} matching expenses"`.
-    - The command passes the results list, search term, and search type to `Ui#showFoundExpenses`, which formats and displays the output.
-
-5. **Data persistence:** Since find is a read-only operation, `StorageManager.saveExpenseManager` is called after execution (as per the standard command execution flow in `Main`), but no actual data changes occur.
-
-The sequence diagram in `docs/diagrams/find-sequence.puml` illustrates these interactions, showing the branching logic for category versus description searches within `ExpenseManager`.
-
-<br>
+5. <br>
 
 #### Logic & Validation
 
@@ -1696,8 +1688,14 @@ All tests assume the repository has been cloned and Java 17 is available.
 2. **Edit multiple fields**
     1. Test case: `edit id/1 a/20.00 desc/Lunch at cafe cat/Food`<br>
        **Expected:** All three fields updated.
-
-3. **Invalid edit commands**
+   
+3. **No Change Made**
+   1. Test case: `edit id/1` <br>
+      **Expected:** Shows “No changes were made to the expense” and the expense.
+   2. Test case: `edit id/1 a/20` (same value as before) <br>
+      **Expected:** System detects no changes and displays “No changes were made to the expense” and the expense.
+   
+4. **Invalid edit commands**
     1. Test case: `edit id/999 a/10` (invalid index)<br>
        **Expected:** Error "Expense index must be between 1 and X".
     2. Test case: `edit a/10`<br>

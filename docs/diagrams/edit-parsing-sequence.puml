@@ -1,0 +1,67 @@
+@startuml
+!theme vibrant
+title Edit Command Sequence Diagram – Parsing & Validation Phase
+
+== Command Parsing and Validation ==
+
+actor User
+participant ":Main" as Main
+participant ":StorageManager" as StorageManager
+participant ":Parser" as Parser
+participant ":ArgumentParser" as ArgumentParser
+participant ":InputValidator" as InputValidator
+participant ":EditCommand" as EditCommand
+
+activate Main
+Main -> StorageManager : loadExpenseManager(ui)
+activate StorageManager
+StorageManager --> Main : expenseManager
+deactivate StorageManager
+
+User -> Main : enters "edit id/1 a/15 desc/dinner cat/food"
+
+Main -> Parser : parse("edit id/1 a/15 desc/dinner cat/food")
+activate Parser
+
+create ArgumentParser
+Parser -> ArgumentParser : "id/1 a/15 desc/dinner cat/food"
+activate ArgumentParser
+Parser -> ArgumentParser : getValue("id/")
+ArgumentParser --> Parser : "1"
+
+opt optional fields
+    Parser -> ArgumentParser : getOptionalValue("a/")
+    ArgumentParser --> Parser : "15"
+    Parser -> ArgumentParser : getOptionalValue("desc/")
+    ArgumentParser --> Parser : "dinner"
+    Parser -> ArgumentParser : getOptionalValue("cat/")
+    ArgumentParser --> Parser : "food"
+end
+deactivate ArgumentParser
+
+Parser -> InputValidator : validateIndex("1", "edit")
+activate InputValidator
+InputValidator --> Parser : 1
+deactivate InputValidator
+
+Parser -> InputValidator : validateAmount("15", "edit")
+activate InputValidator
+InputValidator --> Parser : 15.0
+deactivate InputValidator
+
+Parser -> InputValidator : validateDescription("dinner", "edit")
+activate InputValidator
+InputValidator --> Parser : "dinner"
+deactivate InputValidator
+
+Parser -> InputValidator : validateCategory("food", "edit")
+activate InputValidator
+InputValidator --> Parser : "food"
+deactivate InputValidator
+
+create EditCommand
+Parser -> EditCommand : (1, 15.0, "dinner", "food")
+Parser --> Main : EditCommand
+deactivate Parser
+deactivate Main
+@enduml

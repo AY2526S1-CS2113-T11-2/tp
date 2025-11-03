@@ -377,6 +377,9 @@ public class ExpenseManager implements Serializable {
         assert expense != null : "Expense must not be null";
 
         totalExpenses -= expense.getAmount();
+        if  (totalExpenses < FLOAT_NOISE_THRESHOLD) {
+            remainingBalance=0;
+        }
         assert totalExpenses >= 0 : "Total expenses must not be negative after unmarking";
         recalculateRemainingBalance();
 
