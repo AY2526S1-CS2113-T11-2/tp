@@ -327,8 +327,6 @@ The `Model` component represents the application's core data and business logic.
 
 ***
 
-The Model component works in conjunction with the Storage component to persist data across application sessions.
-
 ## Storage Component
 
 **API**: `StorageManager.java`
@@ -406,14 +404,13 @@ ExpenseManager manager = StorageManager.loadExpenseManager(ui)
 
 ---
 
-Having covered the architectural design of orCASHbuddy's components, the following section examines the implementation details of key features, illustrating how the components work together to deliver functionality.
-
 ## Implementation
 
 This section describes noteworthy implementation details for key features, showing how the UI, Logic, Model, and Storage components collaborate to handle user commands.
 
 <br>
 
+<!-- @@author limzerui -->
 ### Add Expense Feature
 
 #### Overview
@@ -437,32 +434,47 @@ The add-expense workflow transforms a single line of user input into a populated
 
 The sequence diagram in `docs/diagrams/add-sequence.puml` illustrates the interactions between these collaborative components. Rendering the diagram (e.g., `plantuml docs/diagrams/add-sequence.puml`) is recommended when onboarding new contributors.
 
-#### State Mutation and Invariants
+<br>
 
-`ExpenseManager#addExpense` enforces a set of assertions: the amount must remain positive, the description non-blank, and the category non-empty. Although assertions are disabled at runtime by default, they serve as guardrails during development and test execution (`./gradlew test` runs with `-ea`). The manager appends the expense to an `ArrayList`, deliberately avoiding sorting or filtering to preserve insertion order for index-based commands.
+#### Logic & Validation
 
-The `Expense` object itself is largely immutable—only the paid flag can change post-construction. The implementation uses a simple constructor rather than a builder pattern to keep object creation lightweight. Formatting logic (`Expense#formatForDisplay`) centralizes the "[`[X] [CATEGORY] DESCRIPTION - $AMOUNT`]" representation so that both `Ui` and tests stay in sync.
+**Validation:** `InputValidator` centralizes all validation logic, ensuring amounts are positive decimals, descriptions are non-blank ASCII strings, and categories follow naming rules (start with letter, alphanumeric with spaces/hyphens, max 20 characters). Validation occurs upstream in `Parser` before command creation.
 
-#### Logging and Diagnostics
+**State Management:** `ExpenseManager#addExpense` enforces invariants through assertions, appending expenses to an `ArrayList` while preserving insertion order for index-based commands. The `Expense` object is largely immutable—only the paid flag can change post-construction.
 
-`AddCommand` records a structured log entry (`amount`, `description`, `category`) at INFO level. Logs are useful when validating manual test transcripts or diagnosing corrupted input. Since categories may contain spaces, logging at command level avoids the need to recompute arguments later.
+<br>
 
 #### Error Handling Strategy
 
-During parsing, `OrCashBuddyException`s raised by `InputValidator` are caught inside `Parser` and wrapped in an `InvalidCommand`, ensuring `Ui` can display contextual usage guidance without unwinding the call stack. Exceptions that arise later during command execution (for example, index errors in `DeleteCommand`) do propagate back to `Main`, which logs the issue and keeps the loop responsive. Because `AddCommand` performs no catch-all handling, unexpected runtime problems still surface promptly during testing.
+During parsing, `OrCashBuddyException`s raised by `InputValidator` are caught in `Parser` and wrapped in an `InvalidCommand`, ensuring the UI displays contextual usage guidance. `AddCommand` performs no catch-all handling, allowing unexpected issues to surface during testing. Common error scenarios include:
+- Missing or invalid amount prefix → displays usage message with correct format
+- Non-numeric amount values → shows format error with example
+- Negative or zero amounts → explains minimum value requirement ($0.01)
+- Empty descriptions → prompts for valid input
+- Invalid category format → displays category naming rules
 
-#### Extensibility and Future Enhancements
+<br>
 
-- **Additional prefixes:** Introducing new metadata (e.g., `date/`, `repeat/`) requires changes only in `Parser`, `InputValidator`, and `Expense`—the command execution logic remains untouched.
-- **Persistence:** When a storage layer is added, `ExpenseManager#addExpense` becomes the natural integration point for writing to disk while preserving existing interactions.
+#### Design Rationale
+
+The add-expense workflow uses prefix-based syntax (`a/`, `desc/`, `cat/`) for clarity and to avoid positional argument confusion with optional fields. Keeping validation upstream in `Parser` maintains separation of concerns and simplifies error messaging. The simple immutable design for `Expense` objects (using a plain constructor instead of a builder pattern) keeps object creation lightweight while ensuring predictable behavior.
+
+<br>
 
 #### Alternatives Considered
 
 - **Positional arguments:** Rejected because optional fields would force users to remember ordering, increasing input errors.
 - **Validation inside `AddCommand`:** Parsing and validation are deliberately kept upstream. Performing both in the command would dilute separation of concerns and complicate error messaging.
 
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include support for recurring expenses with auto-entry, multi-currency support with conversion, and additional metadata fields (dates, tags, attachments).
+
 ***
 
+<!-- @@author aydrienlaw -->
 ### Set Budget Feature
 
 #### Overview
@@ -499,93 +511,22 @@ The budget is persistent across application sessions and can be updated at any t
 
 The sequence diagram in `docs/diagrams/setbudget-sequence.puml` illustrates these interactions from input parsing to storage persistence.
 
-#### Budget Calculation and State Management
+<br>
 
-`ExpenseManager#setBudget(double)` manages budget state:
-```java
-public void setBudget(double budget) {
-    assert budget > 0.0 : "Budget must be positive";
-    
-    this.budget = budget;
-    recalculateRemainingBalance();
-    
-    LOGGER.log(Level.INFO, "Budget set to {0}", budget);
-}
+#### Logic & Validation
 
-private void recalculateRemainingBalance() {
-    remainingBalance = budget - totalExpenses;
-    assert Math.abs(remainingBalance - (budget - totalExpenses)) < 0.001
-            : "Remaining balance calculation error";
-}
-```
+**Validation:** `InputValidator#validateAmount` ensures the budget value is a positive decimal. Validation occurs upstream in `Parser`, with errors wrapped in `InvalidCommand` for user-friendly display.
 
-**Key Invariants:**
-- **Budget positivity:** The budget must always be greater than zero. This is enforced by both `InputValidator` during parsing and `ExpenseManager` via assertions.
-- **Balance consistency:** After any budget update, the invariant `remainingBalance = budget - totalExpenses` must hold exactly. The `recalculateRemainingBalance()` method ensures this, with an assertion checking for floating-point calculation errors.
-- **Total expenses independence:** Setting a new budget does not modify `totalExpenses`, which only changes when expenses are marked or unmarked. This separation ensures budget updates don't accidentally reset expense tracking.
+**State Management:** `ExpenseManager#setBudget` stores the budget value and immediately calls `recalculateRemainingBalance()`, which updates `remainingBalance = budget - totalExpenses`. The method enforces invariants through assertions:
+- Budget positivity: Must always be > 0
+- Balance consistency: `remainingBalance == budget - totalExpenses` must hold within 0.001 tolerance
+- Total expenses independence: Setting budget doesn't modify `totalExpenses`
 
-#### Display Format and User Feedback
+**Progress Bar Display:** After setting budget, the command displays a color-coded progress bar (green < 75%, yellow 75-100%, red > 100%) via `ui.showProgressBar()`, providing instant visual feedback.
 
-`Ui#showNewBudget(double)` provides simple confirmation:
-```java
-public void showNewBudget(double budget) {
-    System.out.println("Your total budget is now " + formatCurrency(budget) + ".");
-}
-```
+**User Feedback:** `Ui#showNewBudget` displays confirmation message ("Your total budget is now $X.XX"), keeping feedback concise while allowing users to view detailed status via `list` command.
 
-Example output:
-```
----------------------------------------------------------------
-Your total budget is now $100.00.
----------------------------------------------------------------
-```
-
-The confirmation message is intentionally concise, focusing on the action completed. Users can view detailed budget status (remaining balance, percentage used) by running the `list` command, which displays the full financial summary with progress bar visualization.
-
-After setting the budget, the command immediately displays the color-coded progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`, providing instant visual feedback on budget usage.
-
-#### Integration with Budget Tracking
-
-Once set, the budget immediately affects the progress bar visualization:
-
-**Visual Progress Bar:**
-Commands that affect budget usage display a color-coded progress bar:
-- Green: < 75% of budget used
-- Yellow: 75-100% of budget used
-- Red: Over budget (> 100%)
-
-**When Progress Bar is Shown:**
-The progress bar appears automatically after:
-- `setbudget` command (always)
-- `mark` command (always)
-- `unmark` command (always)
-- `delete` command (only if the deleted expense was marked)
-- `edit` command (only if the expense is marked AND the amount changed)
-
-#### Logging and Diagnostics
-
-`SetBudgetCommand` logs at INFO level:
-```
-INFO: Budget set to 100.0
-```
-
-This simple log entry provides an audit trail of budget changes, useful for debugging user-reported discrepancies or verifying command execution during manual testing.
-
-#### Design Rationale
-
-**Why require positive budget?**
-Zero or negative budgets have no meaningful interpretation in expense tracking. By rejecting these values early (during validation), the application prevents downstream logic errors and provides clear error messages to users who might accidentally type `setbudget a/-50` or `setbudget a/0`.
-
-**Why allow budget updates?**
-Real-world budgets change frequently (monthly allowances, project budgets, semester spending limits). Allowing seamless updates without requiring deletion of existing expenses provides flexibility while maintaining expense history. The application recalculates remaining balance immediately, so users see accurate status after any budget change.
-
-**Why separate budget from total expenses?**
-This separation of concerns ensures that:
-- Budget represents the user's *intended* spending limit (input)
-- Total expenses represents *actual* spending (calculated from marked expenses)
-- Remaining balance is always derived from these two values (never stored independently)
-
-This design prevents inconsistencies where remaining balance might drift from the true calculation due to bugs or data corruption.
+<br>
 
 #### Error Handling Strategy
 
@@ -603,19 +544,58 @@ Example error messages:
 **Floating-point precision:**
 Budget amounts are stored as double primitives. While this introduces potential floating-point errors, the `recalculateRemainingBalance()` assertion uses a tolerance of 0.001 to catch significant deviations without triggering false positives from typical floating-point arithmetic.
 
-#### Extensibility Considerations
+<br>
 
-Potential enhancements include category-specific budgets, time-based budget periods with automatic reset, budget history tracking, multiple budget support for different contexts, and proactive budget warnings when adding expenses.
+#### Design Rationale
+
+**Why require positive budget?**
+Zero or negative budgets have no meaningful interpretation in expense tracking. By rejecting these values early (during validation), the application prevents downstream logic errors and provides clear error messages to users who might accidentally type `setbudget a/-50` or `setbudget a/0`.
+
+**Why allow budget updates?**
+Real-world budgets change frequently (monthly allowances, project budgets, semester spending limits). Allowing seamless updates without requiring deletion of existing expenses provides flexibility while maintaining expense history. The application recalculates remaining balance immediately, so users see accurate status after any budget change.
+
+**Why separate budget from total expenses?**
+This separation of concerns ensures that:
+- Budget represents the user's *intended* spending limit (input)
+- Total expenses represents *actual* spending (calculated from marked expenses)
+- Remaining balance is always derived from these two values (never stored independently)
+
+This design prevents inconsistencies where remaining balance might drift from the true calculation due to bugs or data corruption.
+
+<br>
+
+#### Error Handling Strategy
+
+**Missing or invalid amounts:**
+If the user enters `setbudget` without an amount or with invalid input:
+- `InvalidCommand` wraps the `OrCashBuddyException` from parsing
+- `InvalidCommand#execute()` calls `Ui#showSetBudgetUsage()` to display correct format
+- Application continues without modifying the budget
+
+Example error messages:
+- `"Missing amount prefix 'a/'"` → shows usage
+- `"Amount is not a valid decimal: abc"` → shows usage
+- `"Amount must be greater than 0: -50.00"` → shows usage
+
+**Floating-point precision:**
+Budget amounts are stored as double primitives. While this introduces potential floating-point errors, the `recalculateRemainingBalance()` assertion uses a tolerance of 0.001 to catch significant deviations without triggering false positives from typical floating-point arithmetic.
+
+<br>
 
 #### Alternatives Considered
 
 - **Budget as optional parameter to add:** Rejected to maintain separation of concerns and prevent accidental budget overrides
 - **Confirmation prompt for budget changes:** Rejected to avoid friction in CLI workflows; users can verify changes via `list` command
 
-By keeping budget setting simple and immediate, orCASHbuddy maintains its lightweight, keyboard-centric design philosophy while providing the essential functionality needed for expense tracking.
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include category-specific budgets, time-based budget periods with automatic reset, budget history tracking, multiple budget support for different contexts, and proactive budget warnings when adding expenses.
 
 ***
 
+<!-- @@author muadzyamani -->
 ### Mark/Unmark Expense Feature
 
 #### Overview
@@ -656,61 +636,35 @@ Marking an expense triggers three critical updates: the expense's internal paid 
 
 The sequence diagram in `docs/diagrams/mark-sequence.puml` illustrates these interactions. A corresponding `unmark-sequence.puml` captures the symmetrical unmark flow with budget decrements instead of increments.
 
-#### State Mutation and Invariants
+<br>
 
-The `Expense` class maintains a mutable `isMarked` boolean flag, initially set to `false` in the constructor. This is the only mutable field in an otherwise immutable object. The `mark()` and `unmark()` methods provide controlled mutation:
+#### Logic & Validation
 
-```java
-public void mark() {
-    this.isMarked = true;
-}
+**Validation:** `InputValidator#validateIndex` enforces that indices are positive integers, throwing `OrCashBuddyException` for malformed, missing, or invalid input. `ExpenseManager#validateIndex` further checks that indices fall within `[1, expenses.size()]` and that the list is not empty.
 
-public void unmark() {
-    this.isMarked = false;
-}
-```
+**State Mutation:** The `Expense` class maintains a mutable `isMarked` boolean flag, controlled via `mark()` and `unmark()` methods. This is the only mutable field in an otherwise immutable object.
 
-`ExpenseManager` enforces several critical invariants during mark/unmark operations:
+**Budget Updates:** Marking adds the expense amount to `totalExpenses`; unmarking subtracts it. Both operations invoke `recalculateRemainingBalance()` to maintain the invariant `remainingBalance == budget - totalExpenses`.
 
-- **Index bounds:** Assertions verify `index >= 1` before calling manager methods. The `validateIndex` method throws exceptions for indices outside `[1, expenses.size()]` or when the list is empty.
-- **Budget consistency:** After any mark/unmark, the invariant `remainingBalance == budget - totalExpenses` must hold. This is enforced through `recalculateRemainingBalance`, which is called by both `updateBudgetAfterMark` and `updateBudgetAfterUnmark`.
-- **Non-negative totals:** While not explicitly asserted in production code, the design ensures `totalExpenses >= 0.0` through careful decrement logic during unmarking.
+**Redundancy Check:** The manager checks if an expense is already in the desired state (marked/unmarked) to prevent duplicate operations and provide appropriate user feedback.
 
-These invariants are verified during development testing (when assertions are enabled with `-ea`) and logged at INFO level, making it easy to diagnose state corruption during manual testing or debugging.
+<br>
 
-#### Progress Bar Display
+#### Error Handling Strategy
 
-After marking or unmarking an expense, the command automatically displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`. The progress bar provides immediate visual feedback with color coding:
+Error handling occurs at multiple levels:
+- **Invalid indices:** `InputValidator` catches non-numeric, negative, or missing indices during parsing, wrapping errors in `InvalidCommand` for user-friendly display
+- **Out-of-range indices:** `ExpenseManager#validateIndex` throws `OrCashBuddyException` if index exceeds list size or list is empty, with specific error messages indicating valid range
+- **Duplicate operations:** Attempting to mark an already-marked expense (or unmark an unmarked expense) displays informative message without throwing exceptions
+- All exceptions propagate to `Main` for consistent error display via `Ui`
 
-- **Green (< 75%):** Safe spending range
-- **Yellow (75-100%):** Approaching budget limit
-- **Red (> 100%):** Over budget
+<br>
 
-This immediate visual feedback helps users make informed spending decisions right after recording payments, rather than requiring a separate `list` command to check status.
+#### Design Rationale
 
-#### Logging and Diagnostics
+The mark/unmark design uses simple index-based syntax to minimize typing during rapid expense management. Explicit marking (rather than automatic on add) preserves flexibility for users who log planned expenses before payment. The progress bar display after each operation provides immediate visual feedback, encouraging users to stay aware of budget status. The mutable flag design keeps the implementation simple while maintaining data integrity through careful budget recalculation.
 
-Both `MarkCommand` and `UnmarkCommand` log structured entries at INFO level:
-
-```java
-LOGGER.log(Level.INFO, "Marked expense at index {0}: {1}",
-        new Object[]{index, expense.getDescription()});
-
-LOGGER.log(Level.INFO, "Unmarked expense at index {0}: {1}",
-        new Object[]{index, expense.getDescription()});
-```
-
-`ExpenseManager` logs budget updates after each operation:
-
-```java
-LOGGER.info(() -> "Updated budget after mark: total=" + totalExpenses +
-        ", remaining=" + remainingBalance);
-
-LOGGER.info(() -> "Updated budget after unmark: total=" + totalExpenses +
-        ", remaining=" + remainingBalance);
-```
-
-These logs are essential for verifying correct budget arithmetic during manual testing and provide audit trails for debugging user-reported discrepancies.
+<br>
 
 #### Alternatives Considered
 
@@ -720,8 +674,15 @@ These logs are essential for verifying correct budget arithmetic during manual t
     - Emoji require Unicode support and increase display width.
     - Bracket notation is text-based, universally compatible, and familiar to users from todo list applications (including the CS2113 iP assignment).
 
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include batch mark/unmark operations (e.g., `mark 1 3 5`), partial payment tracking (marking expenses as partially paid), payment date tracking with automatic marking, and undo/redo support for mark/unmark operations.
+
 ***
 
+<!-- @@author muadzyamani -->
 ### Find Expense Feature
 
 #### Overview
@@ -775,34 +736,33 @@ The find operation performs case-insensitive substring matching, prioritizing ea
 
 The sequence diagram in `docs/diagrams/find-sequence.puml` illustrates these interactions, showing the branching logic for category versus description searches within `ExpenseManager`.
 
-#### Search Algorithm
+<br>
 
-Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with case-insensitive substring matching via `String.contains()`. This approach prioritizes user experience (no need to remember exact capitalization or complete terms) over performance, which is acceptable for the expected dataset size of personal expense tracking.
+#### Logic & Validation
 
-#### Display Format and User Feedback
+**Validation:** `Parser` validates that exactly one search prefix (`cat/` or `desc/`) is provided. Empty search terms are rejected with `OrCashBuddyException`.
 
-`Ui#showFoundExpenses` handles three scenarios:
+**Search Algorithm:** Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with case-insensitive substring matching via `String.contains()`. This prioritizes user experience (no need to remember exact capitalization or complete terms) over performance, which is acceptable for personal expense tracking dataset sizes.
 
-1. **No matches found:** Displays `"No expenses found matching {searchType}: {searchTerm}"`, helping users distinguish between empty expense lists and unsuccessful searches.
+**Display Logic:** `Ui#showFoundExpenses` handles three scenarios:
+- No matches found: Displays "No expenses found matching {searchType}: {searchTerm}"
+- One or more matches: Shows count and numbered list (display-only numbering, not actual indices)
+- Marked status is visible in results (`[X]`/`[ ]`), supporting workflows to find unpaid expenses
 
-2. **One or more matches:** Shows count first (`"Found {count} expense(s) matching {searchType}: {searchTerm}"`), followed by a numbered list of matching expenses formatted via `Expense#formatForDisplay`. The numbering (1, 2, 3...) is display-only and does not correspond to original list indices: this prevents confusion since find results are a filtered subset.
+**Read-Only Operation:** The find command does not modify any data, making it safe for exploratory use.
 
-3. **Separator formatting:** The output is wrapped in separator lines for visual clarity, consistent with other command outputs.
+<br>
 
-Example output for `find cat/food`:
-```
----------------------------------------------------------------
-Found 2 expense(s) matching category: food
-1. [ ] [Food] Lunch - $8.50
-2. [X] [Fast Food] Dinner - $12.00
----------------------------------------------------------------
-```
+#### Error Handling Strategy
 
-Users can visually scan the marked status (`[X]`/`[ ]`) within results, supporting workflows where they want to find unpaid expenses in a specific category or locate specific transactions by description keywords.
+Error handling focuses on input validation:
+- **Missing search prefix:** If neither `cat/` nor `desc/` is provided, `ArgumentParser` throws `OrCashBuddyException` with message indicating required prefix
+- **Empty search term:** Parser rejects empty strings after prefix with informative error
+- **Multiple prefixes:** If both `cat/` and `desc/` are provided, parser rejects the command and displays usage
+- All validation errors are wrapped in `InvalidCommand` which displays appropriate usage guidance
+- No runtime exceptions expected during search execution; empty results are handled gracefully
 
-#### Logging
-
-Both `FindCommand` and `ExpenseManager` log search operations at INFO level, recording search type, search term, and result count. Logging includes only counts and search terms (not full expense details) to maintain manageable log files and avoid sensitive data exposure.
+<br>
 
 #### Design Rationale
 
@@ -812,17 +772,22 @@ Mutually exclusive searches were chosen over unified searches because users typi
 **Why case-insensitive matching?**
 Case-insensitive matching prevents frustration from capitalization mismatches and handles real-world data entry inconsistencies with negligible performance impact.
 
-#### Extensibility Considerations
-
-Potential enhancements include combined category/description searches, date-based searching, amount range queries, and batch operations on search results.
+<br>
 
 #### Alternatives Considered
 
 - **Search result caching:** Storing the last search results in `ExpenseManager` to support pagination or follow-up operations was considered but rejected because it introduces statefulness that complicates testing and doesn't align with the stateless command model used elsewhere.
 - **Multi-field unified search:** A single `search KEYWORD` command that checks all fields (category, description, amount) was considered but rejected because amount matching requires different logic (numerical comparison vs string matching), and unified results would be harder to interpret.
 
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include combined category/description searches, date-based searching, amount range queries, and batch operations on search results.
+
 ***
 
+<!-- @@author saheer17 -->
 ### Delete Expense Feature
 
 #### Overview
@@ -854,7 +819,7 @@ This prevents accidental deletions and ensures data integrity.
     - If the deleted expense was marked, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`.
     - Data persistence is triggered by the main application logic after command execution, ensuring consistency without coupling storage logic into `ExpenseManager`.
 
-#### Deletion Logic and Validation
+#### Logic & Validation
 
 `ExpenseManager#deleteExpense(int index)` performs several key steps:
 
@@ -881,7 +846,7 @@ public Expense deleteExpense(int index) throws OrCashBuddyException {
 ##### Balance update
 If the deleted expense was marked, the total expenses and remaining balance are recalculated to reflect the deletion.
 
-#### Display Format and User Feedback
+##### Display Format and User Feedback
 
 `Ui#showDeletedExpense` displays feedback confirming successful deletion:
 
@@ -901,22 +866,18 @@ Deleted Expense:
 
 This clear visual confirmation reassures users that the intended expense was deleted. The display includes the expense's previous marked status and category, maintaining consistency with other output formats.
 
-#### Logging and Diagnostics
+<br>
 
-The `DeleteCommand` and `ExpenseManager` log relevant details at INFO level to aid debugging:
+#### Error Handling Strategy
 
-```
-Executing delete command for index: 3
-Deleted expense at index 3: Lunch
-```
-If an invalid index is entered or the expense list is empty, an OrCashBuddyException is thrown to signal the error.
-If an invalid index is entered or the expense list is empty, a warning-level log is generated:
+Error handling occurs at multiple levels:
+- **Invalid index format:** `InputValidator` catches non-numeric, negative, or missing indices during parsing, throwing `OrCashBuddyException` with descriptive messages
+- **Out-of-range index:** `ExpenseManager#validateIndex` throws `OrCashBuddyException` if index exceeds list size, providing specific range information (e.g., "Index must be between 1 and 3")
+- **Empty list:** Attempting to delete from an empty list triggers exception with message "No expenses to delete"
+- All exceptions are caught by `Main` and displayed via `Ui` for consistent error messaging
+- Budget updates are atomic: if deletion fails, no budget changes occur
 
-```
-WARNING: Invalid index 5. No expense deleted.
-```
-
-These logs help trace command execution and identify user input errors during testing.
+<br>
 
 #### Design Rationale
 
@@ -930,11 +891,7 @@ Index-based deletion was chosen over name-based deletion to:
 ##### Why immediate data persistence?
 Deleting an expense instantly updates the stored file, ensuring users never lose consistency between sessions. This design choice eliminates the need for manual saving commands.
 
-#### Extensibility and Future Enhancements
-
-- **Multiple deletions:** Extend syntax to `delete 2 4 5` to allow batch deletions. This requires modifying the parser to handle multiple indices and iteratively remove them in descending order.
-- **Soft delete / undo:** Instead of permanently deleting, expenses could be flagged as "archived" for recovery later. An `undo` or `restore` command could then reinsert them.
-- **Delete by search result:** Allow deleting directly from filtered lists (e.g., after `find cat/food`). This would require context tracking of last search results within `ExpenseManager`.
+<br>
 
 #### Alternatives Considered
 
@@ -947,8 +904,17 @@ Rejected due to ambiguity when duplicate names exist. Index-based deletion remai
 **Deferred deletion:**
 Queuing deletions and saving all at exit was considered but rejected in favor of immediate persistence for reliability and simplicity.
 
+<br>
+
+#### Future Enhancements
+
+- **Multiple deletions:** Extend syntax to `delete 2 4 5` to allow batch deletions. This requires modifying the parser to handle multiple indices and iteratively remove them in descending order.
+- **Soft delete / undo:** Instead of permanently deleting, expenses could be flagged as "archived" for recovery later. An `undo` or `restore` command could then reinsert them.
+- **Delete by search result:** Allow deleting directly from filtered lists (e.g., after `find cat/food`). This would require context tracking of last search results within `ExpenseManager`.
+
 ***
 
+<!-- @@author gumingyoujia -->
 ### Edit Expense Feature
 
 #### Overview
@@ -961,9 +927,6 @@ The **Edit Expense** feature allows users to modify details of an existing expen
 ![Edit Sequence Diagram](images/edit-sequence.png)
 
 <br>
-
-#### Implementation
-The `EditCommand` class extends `Command` and performs the update by replacing the specified `Expense` with a new `Expense` object containing the modified details.
 
 #### Control Flow
 
@@ -993,42 +956,33 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
    - If the edited expense was marked AND the amount changed, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())` to show the updated budget usage.
 
-5. **Data Persistence:**  
+5. **Data Persistence:**
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 
-#### Example
+<br>
 
-##### User Input
-```
-edit /id 2 /a 20.50 /desc Dinner /cat Food
-```
+#### Logic & Validation
 
-##### Expected Output
-```
-Edited expense: [ ] [Food] Dinner - $20.50
-```
+**Validation:** Index validation ensures the provided index corresponds to an existing expense. `InputValidator` validates new amount values (must be positive decimals), descriptions (non-blank ASCII), and categories (naming rules). Null values for optional fields preserve original data, enabling partial edits.
 
-#### Validation
-- Ensures the provided index corresponds to an existing expense.
-- Null values for fields (amount/description/category) preserve the original data, allowing partial edits.
-- Invalid or negative amounts trigger validation errors from `InputValidator`.
+**Replacement Logic:** The `Expense` class uses final fields for immutability. The edit operation creates a new `Expense` object with updated values, replacing the original via `ExpenseManager#replaceExpense`. The marked status is preserved by re-marking the new expense if the original was marked.
 
-#### Logging and Diagnostics
+**Budget Impact:** If the edited expense is marked AND the amount changed, the command updates budget calculations and displays the progress bar.
 
-Logging statements in both `EditCommand` and `ExpenseManager` track the feature’s lifecycle:
+**Empty Edit Handling:** If no parameters are provided, `Ui#showEmptyEdit` displays "No changes were made" message.
 
-```
-INFO: Executing EditCommand for index 2
-INFO: Updated expense: [ ] [Food] Brunch - $15.00
-INFO: EditCommand execution completed
-```
+<br>
 
-If validation fails:
-```
-WARNING: Attempted to edit expense with invalid index 7
-```
+#### Error Handling Strategy
 
-These logs assist in debugging, regression testing, and tracing command history during QA.
+Error handling addresses multiple scenarios:
+- **Invalid index:** `InputValidator` and `ExpenseManager#validateIndex` throw `OrCashBuddyException` for non-numeric, negative, or out-of-range indices
+- **Empty list:** Editing when no expenses exist triggers "No expenses to edit" error
+- **Invalid field values:** `InputValidator` rejects negative amounts, empty descriptions, and malformed categories with specific error messages
+- **No changes provided:** Displays informative message rather than throwing error
+- All validation errors are wrapped in `InvalidCommand` for user-friendly display
+
+<br>
 
 #### Design Rationale
 
@@ -1039,7 +993,18 @@ Creating a new `Expense` object ensures that once created, an instance cannot be
 ##### Why allow partial updates?
 Users may only want to fix one detail (e.g., typo in description), so optional parameters provide flexibility.
 
-#### Extensibility and Future Enhancements
+<br>
+
+#### Alternatives Considered
+
+- **In-place mutation:** Rejected because `Expense` uses final fields for immutability; creating new objects ensures data safety
+- **Delete and re-add workflow:** Rejected because it's cumbersome for users and doesn't preserve marked status or list position
+- **Separate commands for each field:** Considered having `editAmount`, `editDesc`, `editCat` commands, but rejected to keep command set concise
+- **Automatic budget recalculation for all edits:** Only recalculates when marked expense amount changes, avoiding unnecessary updates
+
+<br>
+
+#### Future Enhancements
 
 - **Support editing by keyword:** Allow editing by expense name instead of index (e.g., `edit "Lunch"`).
 - **Batch editing:** Enable simultaneous modification of multiple expenses.
@@ -1047,6 +1012,7 @@ Users may only want to fix one detail (e.g., typo in description), so optional p
 
 ***
 
+<!-- @@author saheer17 -->
 ### Sort Expenses Feature
 
 #### Overview
@@ -1074,7 +1040,9 @@ If no expenses exist, the system provides a clear message instead of failing, en
 4. **Data persistence:** Sorting does not change the stored data, so no file updates are required.
    However, `StorageManager.saveExpenseManager(expenseManager, ui)` is still after execution, which just saves the existing list of data, not the sorted list.
 
-#### Sorting Logic and Validation
+<br>
+
+#### Logic & Validation
 
 `ExpenseManager#sortExpenses()` performs the sorting operation and receives sorted expenses of type List<Expense>:
 
@@ -1109,7 +1077,7 @@ If no expenses exist, the system provides a clear message instead of failing, en
 - A copy of the expense list is created to preserve the original order.
 - Expenses are sorted in descending order by their amount using a comparator.
 
-#### Display Format and User Feedback
+##### Display Format and User Feedback
 
 `Ui#showNumberedExpenses(List<Expense> expenses)` is called by `Ui#showSortedExpenseList(List<Expense> sortedExpenses)` to display the sorted expenses in a listed manner:
 
@@ -1134,23 +1102,17 @@ Here is the list of sorted expenses, starting with the highest amount:
 
 This format maintains consistency with other list displays while clearly highlighting the largest expenses first.
 
-#### Logging and Diagnostics
+<br>
 
-The `SortCommand` and `ExpenseManager` log relevant details at INFO level:
+#### Error Handling Strategy
 
-```
-Executing SortCommand
-Sorting expenses in descending order by amount
-SortCommand execution completed
-```
+Error handling for sort is minimal due to its read-only nature:
+- **Empty list:** If no expenses exist, `Ui#showEmptyExpenseListMessage` displays friendly message instead of throwing exception
+- **No validation required:** Sort command accepts no parameters, eliminating input validation errors
+- **Copy operation safety:** Sorting uses defensive copying, so original list remains intact even if sorting fails
+- All exceptions from expense retrieval propagate to `Main` for consistent error display
 
-If the expense list is empty:
-
-```
-INFO: Unable to sort expenses as list is empty
-```
-
-These logs help trace command execution and identify potential issues during testing.
+<br>
 
 #### Design Rationale
 
@@ -1163,12 +1125,7 @@ Descending order quickly highlights the largest expenses, which are typically th
 ##### Why no data persistence?
 Sorting is a view operation only; the stored data should remain unchanged. This ensures sorting is fast and non-destructive.
 
-#### Extensibility and Future Enhancements
-
-- **Alternative sort criteria:** Enable sorting by category, description, or date.
-- **Toggle order:** Allow ascending/descending toggle via `sort asc` or `sort desc`.
-- **Combined filters:** Sort results after `find` commands for more advanced queries.
-- **GUI integration:** Display sorted results in a table with sortable columns for future UI enhancements.
+<br>
 
 #### Alternatives Considered
 
@@ -1178,8 +1135,18 @@ Rejected since sorting is purely a viewing operation and should not alter stored
 ##### Multi-criteria sorting
 Considered (e.g., sort by amount then category), but initially implemented simple descending amount sort to keep the CLI lightweight and intuitive.
 
+<br>
+
+#### Future Enhancements
+
+- **Alternative sort criteria:** Enable sorting by category, description, or date.
+- **Toggle order:** Allow ascending/descending toggle via `sort asc` or `sort desc`.
+- **Combined filters:** Sort results after `find` commands for more advanced queries.
+- **GUI integration:** Display sorted results in a table with sortable columns for future UI enhancements.
+
 ***
 
+<!-- @@author saheer17 -->
 ### Storage Management Feature
 
 #### Overview
@@ -1190,18 +1157,12 @@ All interactions with disk storage are mediated by this class, centralising file
 Users do not have to key in a command to save or load data.
 
 **Key responsibilities:**
-* Save `ExpenseManager` to disk (`saveExpenseManager`).
-* Load `ExpenseManager` from disk (`loadExpenseManager`).
-* Automatically create storage directories and files if missing.
-* Handle exceptions gracefully and provide user feedback through `Ui`.
-* Log all important events for diagnostics.
+* Save `ExpenseManager` to disk (`saveExpenseManager`)
+* Load `ExpenseManager` from disk (`loadExpenseManager`)
+* Automatically create storage directories and files if missing
+* Handle exceptions gracefully and provide user feedback through `Ui`
 
-#### Storage Location
-
-* **Directory:** `data`
-* **File:** `appdata.ser`
-
-This is a binary serialized file using Java's built-in serialization mechanism (`ObjectOutputStream` / `ObjectInputStream`).
+**Storage Location:** Data is stored in `data/appdata.ser` using Java's built-in serialization mechanism.
 
 <br>
 
@@ -1221,76 +1182,80 @@ This is a binary serialized file using Java's built-in serialization mechanism (
 * `ui`: Provides user feedback in case of errors.
 
 **Workflow:**
-1. Validate non-null arguments.
-2. Ensure the `data` folder exists, create if missing.
-3. Serialize `ExpenseManager` into `appdata.ser`.
-4. Catch and log any exceptions: `IOException`, `SecurityException`.
-5. Provide user-friendly messages for any failure.
-
-**Logging:**
-* Success: `INFO: ExpenseManager successfully saved to <path>`
-* Failure: `WARNING: Failed to save ExpenseManager`
-
-**Example Usage:**
-```java
-StorageManager.saveExpenseManager(expenseManager, ui);
-```
+1. Validate non-null arguments
+2. Ensure the `data` folder exists, create if missing
+3. Serialize `ExpenseManager` into `appdata.ser`
+4. Catch and handle any exceptions: `IOException`, `SecurityException`
+5. Provide user-friendly messages for any failure
 
 ##### 2. `loadExpenseManager(Ui ui)`
 
 **Purpose:** Loads the `ExpenseManager` from disk or returns a new instance if loading fails.
 
-**Parameters:**
-* `ui`: Provides user feedback in case of errors.
-
 **Workflow:**
-1. Validate non-null `ui`.
-2. Ensure `data` folder exists, create if missing.
-3. Ensure `appdata.ser` file exists; create if missing.
-4. Deserialize the object using `ObjectInputStream`.
-5. Validate that the loaded object is an instance of `ExpenseManager`.
-6. Catch exceptions: `IOException`, `ClassNotFoundException`, `SecurityException`.
-7. On failure, log the issue and return a new `ExpenseManager`.
-8. Provide user-friendly messages for corrupted, incompatible, or missing data.
+1. Validate non-null `ui`
+2. Ensure `data` folder exists, create if missing
+3. Ensure `appdata.ser` file exists; create if missing
+4. Deserialize the object using `ObjectInputStream`
+5. Validate that the loaded object is an instance of `ExpenseManager`
+6. Catch exceptions and fall back to new instance if loading fails
+7. Provide user-friendly messages for corrupted, incompatible, or missing data
 
-**Logging:**
-* Success: `INFO: ExpenseManager successfully loaded from <path>`
-* Failure: `WARNING: IOException / ClassNotFoundException / SecurityException while reading storage file`
+<br>
 
-**Example Usage:**
-```java
-ExpenseManager expenseManager = StorageManager.loadExpenseManager(ui);
-```
+#### Logic & Validation
 
-#### Error Handling
+**Save Logic:** `saveExpenseManager` validates non-null arguments, ensures the `data` directory exists (creates if missing), and serializes the `ExpenseManager` to `appdata.ser` using `ObjectOutputStream`.
 
-* **Folder/File Creation Failure:** Displayed via `Ui.showError`, logged as `WARNING`.
-* **Serialization/Deserialization Failure:** Gracefully fallback to a new `ExpenseManager`.
-* **Permission Issues:** Displayed to user; logged as `WARNING`.
+**Load Logic:** `loadExpenseManager` ensures the data directory and file exist, deserializes the object using `ObjectInputStream`, and validates that the loaded object is an `ExpenseManager` instance. On any failure, returns a new `ExpenseManager` instance for graceful degradation.
 
-All exceptions are caught internally to prevent the application from crashing due to storage issues.
+**Automatic Operation:** Storage operations are triggered automatically by `Main` after every mutating command (save) and at application startup (load). Users never manually invoke storage commands.
+
+**Data Integrity:** Uses Java serialization to preserve the entire object graph, including all expenses, budget information, and marked states.
+
+<br>
+
+#### Error Handling Strategy
+
+Error handling ensures robustness without crashing the application:
+- **Folder/File Creation Failure:** Displays error via `Ui.showError` and gracefully continues with empty expense list
+- **Serialization Failure:** Catches `IOException` and `SecurityException`, displays user-friendly message, and prevents data corruption
+- **Deserialization Failure:** Catches `IOException`, `ClassNotFoundException`, and `SecurityException`; falls back to new `ExpenseManager` with informative message
+- **Permission Issues:** Displays specific permission error to user; application continues with in-memory data only
+- **Corrupted Data:** If deserialized object is not an `ExpenseManager`, treats as corrupted and starts fresh
+- All exceptions are caught internally to prevent application crashes
+
+<br>
 
 #### Design Rationale
 
-1. **Centralised Storage Handling:** All file operations go through `StorageManager`, keeping I/O logic separate from user interaction.
-2. **Immediate Data Saving:** Every command that modifies `ExpenseManager` calls `saveExpenseManager` immediately. This prevents data loss during unexpected shutdowns.
-3. **User-Friendly Error Feedback:** By coupling with `Ui`, storage errors are communicated in plain language rather than Java exceptions.
-4. **Robustness:** Handles missing directories/files, corrupted data, and permission issues. Never throws unchecked exceptions that crash the app.
+**Centralized Storage Handling:** All file operations go through `StorageManager`, keeping I/O logic separate from user interaction. This ensures consistent error handling and data integrity.
 
-#### Extensibility and Future Enhancements
+**Immediate Data Saving:** Every command that modifies `ExpenseManager` calls `saveExpenseManager` immediately. This prevents data loss during unexpected shutdowns and eliminates the need for manual save commands.
+
+**Graceful Degradation:** When loading fails, the application returns a new `ExpenseManager` rather than crashing. This ensures users can always use the application, even if their data file is corrupted.
+
+<br>
+
+#### Alternatives Considered
+
+- **Manual save command:** Rejected to prevent data loss from users forgetting to save; automatic saving after every command ensures consistency
+- **JSON/XML formats:** Binary serialization chosen for simplicity and built-in Java support, though less human-readable
+- **Database storage:** Rejected as overkill for single-user expense tracking; file-based storage is lightweight and sufficient
+- **In-memory only:** Rejected because users need persistent data across sessions
+
+<br>
+
+#### Future Enhancements
 
 * **Alternative File Formats:** Support JSON or XML for easier inspection and manual editing.
 * **Backup Mechanism:** Maintain a versioned backup of previous `ExpenseManager` states.
 * **Encryption:** Secure sensitive data by encrypting the serialized file.
 * **Incremental Save:** Save only modified parts of `ExpenseManager` instead of the whole object.
 
-#### Logging and Diagnostics
-
-* All storage events are logged at `INFO` for successful operations and `WARNING` for failures.
-* Enables tracing of storage-related issues during debugging or testing.
-
 ***
 
+<!-- @@author limzerui -->
 ### Graceful Exit
 
 #### Overview
@@ -1312,21 +1277,49 @@ Exiting the application used to depend on `Main` inspecting raw input (checking 
 
 The sequence diagram stored at `docs/diagrams/bye-sequence.puml` captures this flow, showing that no other component interacts with the exit decision, preserving a single exit pathway.
 
-#### Logging
+<br>
 
-`ByeCommand` logs a concise INFO message upon execution for audit trail purposes.
+#### Logic & Validation
+
+The bye command performs minimal validation:
+- Rejects any trailing arguments (e.g., `bye later` throws `OrCashBuddyException`)
+- Implements the `isExit()` method to return `true`, signaling termination to `Main`
+- No other validation is required as the command accepts no parameters
+
+The exit mechanism uses a boolean flag rather than direct `System.exit()` calls, allowing the main loop to terminate gracefully and ensuring proper cleanup of resources.
+
+<br>
+
+#### Error Handling Strategy
+
+Error handling for the bye command is straightforward:
+- Any trailing arguments trigger `OrCashBuddyException` with message indicating the command takes no parameters
+- Exceptions are caught in `Parser` and wrapped in `InvalidCommand` for user-friendly error display
+- No runtime exceptions expected during execution as the command has no side effects
+- The `isExit()` boolean flag prevents abrupt termination, allowing `Main` to clean up resources properly
+
+<br>
 
 #### Design Rationale
 
 The `ByeCommand` integrates exit logic into the command framework rather than using special-case handling in `Main`. This design improves testability (unit tests can instantiate `ByeCommand` directly) and extensibility (future persistence operations can be added to the command without affecting other components).
+
+<br>
 
 #### Alternatives Considered
 
 - **Direct system exit:** Calling `System.exit(0)` inside `ByeCommand` was rejected because it complicates testing and bypasses finally blocks or future shutdown hooks.
 - **Flag in Main:** Using a mutable boolean in `Main` was rejected because it requires special-case handling and scatters exit logic.
 
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include confirmation prompts before exit (especially if unsaved changes exist), pre-exit cleanup operations, and graceful shutdown of background threads or network connections if added in future versions.
+
 ***
 
+<!-- @@author gumingyoujia -->
 ### Help Feature
 
 #### Overview
@@ -1344,62 +1337,57 @@ The help feature provides users with a comprehensive list of available commands 
 
 1. **Input Capture:** `Main` reads the user's command (`help`) and forwards it to `Parser`.
 2. **Command Creation:** `Parser` recognizes the `help` keyword and directly constructs a new `HelpCommand` object. No arguments are expected or parsed for this command.
-3. **Execution:** When `Main` invokes `command.execute(expenseManager, ui)`:
-    - `HelpCommand` first calls `ui.showSeparator()` for visual formatting.
-    - It then calls `ui.showMenu()` to display the list of commands and their usage.
-    - Finally, it calls `ui.showSeparator()` again for consistent output formatting.
-4. **Data Persistence:** Since the `help` command is a read-only operation and does not modify any application data, `StorageManager.saveExpenseManager` is called after execution (as per the standard command execution flow in `Main`), but no actual data changes are persisted.
+3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which calls `ui.showMenu()` between separator calls for visual formatting.
+4. **Data Persistence:** The `help` command is a read-only operation that does not modify application data.
 
-The sequence diagram in `docs/diagrams/help-sequence.puml` illustrates these interactions.
+<br>
 
-#### Logging
+#### Logic & Validation
 
-`HelpCommand` logs execution at INFO level for audit trail purposes.
+The help command requires no validation as it accepts no parameters. The logic is straightforward:
+- No input parsing or validation is performed
+- The command simply delegates to `Ui#showMenu()` to display the pre-formatted command reference
+- Output is wrapped with visual separators for consistency with other commands
+
+<br>
+
+#### Error Handling Strategy
+
+The help command has minimal error handling requirements:
+- No validation errors possible as the command accepts no parameters
+- No exceptions thrown during execution as it only displays static content
+- UI display errors are handled by the `Ui` component itself
+- The command is designed to always succeed, providing a reliable fallback when users need assistance
+
+<br>
 
 #### Design Rationale
 
-The `help` command is intentionally simple and stateless, requiring no arguments. This design provides immediate access to command documentation, reducing the learning curve for new users while serving as a quick reference for experienced users.
+The `help` command is intentionally simple and stateless, requiring no arguments. This design provides immediate access to command documentation, reducing the learning curve for new users while serving as a quick reference for experienced users. The simplicity ensures reliability and fast execution.
 
-#### Extensibility Considerations
+<br>
 
-Potential enhancements include contextual help for specific commands (`help <command_name>`) and pagination for large command lists.
+#### Alternatives Considered
+
+- **Online documentation:** Rejected to maintain offline functionality and ensure help is always available without internet access.
+- **Interactive tutorial:** Rejected to keep the CLI lightweight and avoid complexity for users who prefer quick reference over guided walkthroughs.
+
+<br>
+
+#### Future Enhancements
+
+Potential enhancements include contextual help for specific commands (`help <command_name>`), searchable help content, and pagination for large command lists.
 
 ***
 
+<!-- @@author gumingyoujia -->
 ### List Feature
 
 #### Overview
 
-The List Feature displays all recorded expenses along with a real-time financial summary. This includes the user’s current budget, total spending, remaining balance, and a visual progress bar that indicates budget utilization.
+The List Feature displays all recorded expenses along with a real-time financial summary. This includes the user's current budget, total spending, remaining balance, and a visual progress bar that indicates budget utilization.
 
-The `list` command serves as a core read-only function within the application, offering users an at-a-glance understanding of their financial status and detailed visibility into all tracked expenses. 
-
-#### Control Flow
-
-1. **Input Capture:** `Main` reads the user's command (`list`) and forwards it to `Parser`.
-
-2. **Command Creation:** `Parser` recognizes the `list` keyword and directly constructs a new `ListCommand` object.
-   - No arguments are expected or parsed for this command, any input arguments will be ignored.
-
-3. **Execution:**  
-   When `Main` invokes `command.execute(expenseManager, ui)`:
-   - `ListCommand` logs that execution has started.
-   - It first calls `ui.showSeparator()` to visually separate output blocks.
-   - It retrieves relevant financial data from `ExpenseManager`:
-      - `getBudget()` – retrieves the total budget set by the user.
-      - `getTotalExpenses()` – calculates the total of all marked expenses.
-      - `getRemainingBalance()` – computes the difference between the budget and total expenses.
-      - `getExpenses()` – returns a list of all `Expense` objects.
-   - These values are passed to `ui.showFinancialSummary(budget, totalExpenses, remainingBalance, expenses)` which:
-      - Displays a formatted financial summary.
-      - Prints the current budget, total spent, and remaining balance.
-      - Generates a **color-coded progress bar** representing the ratio of spending to budget.
-      - Displays all expenses in a numbered list, or a “no expenses added” message if empty.
-   - Finally, it calls `ui.showSeparator()` again for consistent output formatting.
-
-4. **Data Persistence:**  
-   The `list` command is a **read-only** operation that does not modify application data.
-   - As part of the standard execution flow, `StorageManager.saveExpenseManager` is still called after execution, but no new data is persisted.
+The `list` command serves as a core read-only function within the application, offering users an at-a-glance understanding of their financial status and detailed visibility into all tracked expenses.
 
 <br>
 
@@ -1408,20 +1396,56 @@ The `list` command serves as a core read-only function within the application, o
 
 <br>
 
-#### Logging
+#### Control Flow
 
-`ListCommand` logs execution at INFO level, recording when the financial summary is displayed.
+1. **Input Capture:** `Main` reads the user's command (`list`) and forwards it to `Parser`.
+2. **Command Creation:** `Parser` recognizes the `list` keyword and directly constructs a new `ListCommand` object. No arguments are expected or parsed for this command.
+3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which retrieves financial data from `ExpenseManager` and passes it to `ui.showFinancialSummary()` for display.
+4. **Data Persistence:** The `list` command is a read-only operation that does not modify application data.
+
+<br>
+
+#### Logic & Validation
+
+The list command performs minimal validation, accepting no parameters. The main logic involves:
+- Retrieving budget information via `getBudget()`, `getTotalExpenses()`, and `getRemainingBalance()`
+- Fetching all expenses via `getExpenses()`
+- Calculating the budget usage ratio for progress bar color-coding (green < 75%, yellow 75-100%, red > 100%)
+- Displaying expenses in numbered format or showing "no expenses added" message if the list is empty
+
+<br>
+
+#### Error Handling Strategy
+
+The list command has minimal error handling needs:
+- No user input validation required as the command accepts no parameters
+- Handles empty expense list gracefully by displaying "no expenses added" message
+- Budget division-by-zero scenarios are prevented by displaying "no budget set" when budget is 0
+- All exceptions from `ExpenseManager` data retrieval are allowed to propagate to `Main` for consistent error handling
+- Display errors are managed by the `Ui` component
+
+<br>
 
 #### Design Rationale
 
 The `list` command combines textual and visual feedback through a color-coded progress bar, providing users with both detailed information and at-a-glance status. As a read-only operation, it's safe to execute repeatedly without side effects, encouraging users to check their budget status frequently.
 
-#### Extensibility Considerations
+<br>
+
+#### Alternatives Considered
+
+- **Separate budget and expense commands:** Rejected to maintain simplicity and provide a unified financial overview in a single command.
+- **Always showing expenses without budget:** Rejected because users need budget context to understand their financial status.
+
+<br>
+
+#### Future Enhancements
 
 Potential enhancements include pagination for large expense lists, graphical visualization (pie charts, bar graphs), and date range filtering for time-specific summaries.
 
 ---
 
+<!-- @@author limzerui -->
 ## Appendix A: Product Scope
 
 ### Target User Profile
@@ -1547,6 +1571,7 @@ Priorities: High (must have) - `***`, Medium (nice to have) - `**`, Low (unlikel
 
 ---
 
+<!-- @@author aydrienlaw -->
 ## Appendix E: Instructions for Manual Testing
 
 Given below are instructions to test the app manually.
@@ -1767,6 +1792,6 @@ All tests assume the repository has been cloned and Java 17 is available.
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** October 2025  
+**Document Version:** 2.1  
+**Last Updated:** November 2025  
 **Authors:** orCASHbuddy Development Team
