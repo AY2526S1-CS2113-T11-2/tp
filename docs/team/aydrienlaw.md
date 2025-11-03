@@ -1,10 +1,10 @@
-<!-- @@author adrian -->
-## Project: orCASHbuddy
+# Project: orCASHbuddy
 
-### Overview
+## Overview
+
 **orCASHbuddy** is a Java 17 CLI app built for **RC4 Interest Group treasurers** to manage budgets efficiently. It eliminates the need for spreadsheets by offering intuitive commands to track expenses, set budgets, and monitor financial health.
 
----
+## Summary of Contributions
 
 ### Code Contributed
 [View full breakdown on tP Code Dashboard](https://nus-cs2113-ay2526s1.github.io/tp-dashboard/?search=aydrienlaw&breakdown=true&sort=groupTitle%20dsc&sortWithin=title&since=2025-09-19T00%3A00%3A00&timeframe=commit&mergegroup=&groupSelect=groupByRepos&checkedFileTypes=docs~functional-code~test-code~other&filteredFileName=&tabOpen=true&tabType=authorship&tabAuthor=aydrienlaw&tabRepo=AY2526S1-CS2113-T11-2%2Ftp%5Bmaster%5D&authorshipIsMergeGroup=false&authorshipFileTypes=docs~functional-code~test-code&authorshipIsBinaryFileTypeChecked=false&authorshipIsIgnoredFilesChecked=false)
@@ -49,24 +49,13 @@
 
 ---
 
-### Testing Contributions (General)
-- Developed comprehensive test cases and supporting code for core components:
-    - `UiTest` → verified correct display of messages and visual outputs.
-    - `InputValidatorTest` → ensured robust input validation across valid and invalid scenarios.
-    - `ParserTest` → confirmed accurate parsing of commands and arguments.
-    - `InvalidCommandTest` → validated appropriate handling and error reporting for invalid user inputs.
-    - `UnmarkCommandTest` → ensured correct toggling of expense mark status.
-    - `ArgumentParserTest` → tested argument extraction logic and edge cases.
-- Ensured high code coverage and maintained testing consistency across modules.
-
----
-
 ### Team-Based Contributions
 - Conducted **major refactoring before v1.0 release** to improve code maintainability.
     - Applied **Separation of Concerns (SoC)** and **SLAP principles**.
     - Refactored monolithic “God classes” into modular packages:
         - `ui`, `parser`, `commands`, `exception`, `storage`
 - Enforced consistent naming conventions and best practices throughout the project.
+- Maintained issue tracker, git conventions, and project documentation standards.
 
 ---
 
