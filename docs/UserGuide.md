@@ -254,7 +254,7 @@ Budget Used: [==============================|]  105.00%  (Over by: $10.00)
 - If no budget is set, you'll see `[no budget set]` instead of the progress bar
 - Only **marked** expenses count toward your total expenses
 - The alert automatically updates to reflect your current financial status
-- Budget percentages are clamped between 0% and 100% for display, but the "Over by" amount shows exact overspending
+- The alert displays "Over by" amount when remaining balance is negative, and "Remaining" amount otherwise.
 
 ---
 
