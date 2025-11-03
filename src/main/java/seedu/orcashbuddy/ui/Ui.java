@@ -17,6 +17,7 @@ public class Ui {
     private static final String NO_BUDGET_LABEL = "[no budget set]";
     private static final double BUDGET_WARNING_THRESHOLD = 0.75;
     private static final double BUDGET_WARNING_OVER = 1.0;
+    private static final double FLOAT_NOISE_THRESHOLD =0.001;
 
     // ANSI color codes for visual budget bar
     private static final String ANSI_GREEN = "\u001B[32m";
@@ -234,7 +235,7 @@ public class Ui {
 
         // Determine string colour based on budget usage
         String colour;
-        if (ratio > BUDGET_WARNING_OVER) {
+        if (remainingBalance < -FLOAT_NOISE_THRESHOLD) {
             colour = ANSI_RED;
         } else if (ratio >= BUDGET_WARNING_THRESHOLD) {
             colour = ANSI_YELLOW;
@@ -273,10 +274,10 @@ public class Ui {
         sb.append(String.format("%.2f%%", pct));
 
         // Over-budget note
-        if (remainingBalance > 0) {
+        if (remainingBalance > FLOAT_NOISE_THRESHOLD) {
             sb.append("  (Remaining: ").append(formatCurrency(remainingBalance)).append(')');
-        } else if (ratio < 0) {
-            sb.append("  (Over by: ").append(formatCurrency(remainingBalance)).append(')');
+        } else if (remainingBalance < -FLOAT_NOISE_THRESHOLD) {
+            sb.append("  (Over by: ").append(formatCurrency(Math.abs(remainingBalance))).append(')');
         }
 
         System.out.println("Spent: " + formatCurrency(totalExpense) + " / " + formatCurrency(budget));

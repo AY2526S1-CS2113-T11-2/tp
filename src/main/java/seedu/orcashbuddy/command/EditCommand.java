@@ -52,35 +52,44 @@ public class EditCommand extends Command {
 
         LOGGER.log(Level.INFO, "Attempting to edit expense at index {0}", index);
 
+        // Get original expense particulars
         Expense original = expenseManager.getExpense(index);
         if (original == null) {
             LOGGER.log(Level.WARNING, "No expense found at index {0}", index);
             throw new OrCashBuddyException("No expense found at index " + index);
         }
-        double originalAmount=original.getAmount();
-        double updatedAmount = (newAmount != null) ? newAmount : original.getAmount();
-        String updatedDescription = (newDescription != null) ? newDescription : original.getDescription();
-        String updatedCategory = (newCategory != null) ? newCategory : original.getCategory();
+        double originalAmount = original.getAmount();
+        String originalDescription = original.getDescription();
+        String originalCategory = original.getCategory();
+
+        // Update expense particulars
+        double updatedAmount = (newAmount != null) ? newAmount : originalAmount;
+        String updatedDescription = (newDescription != null) ? newDescription : originalDescription;
+        String updatedCategory = (newCategory != null) ? newCategory : originalCategory;
         boolean wasMarked = original.isMarked();
         LOGGER.log(Level.FINE, "Original expense: {0}", original.formatForDisplay());
-        LOGGER.log(Level.FINE, "Updated fields — amount: {0}, desc: {1}, category: {2}",
+        LOGGER.log(Level.FINE, "Updated fields: amount={0}, desc={1}, category={2}",
                 new Object[]{updatedAmount, updatedDescription, updatedCategory});
 
+        // Create a new expense with updated particulars and replace the old one
         Expense edited = new Expense(updatedAmount, updatedDescription, updatedCategory);
         expenseManager.replaceExpense(index, edited);
 
+        // Preserve the mark status
         if  (wasMarked) {
             expenseManager.markExpense(index);
         }
 
+        // UI output
         ui.showSeparator();
-        if (newAmount == null && newDescription == null && newCategory == null){
+        if (Math.abs(updatedAmount - originalAmount) < 0.001 && updatedDescription.equals(originalDescription)
+                && updatedCategory.equals(originalCategory)) {
             ui.showEmptyEdit(edited);
             LOGGER.log(Level.INFO, "No changes were made to the expense.");
         } else {
             ui.showEditedExpense(edited);
         }
-        if (edited.isMarked() && updatedAmount != originalAmount) {
+        if (edited.isMarked() && Math.abs(updatedAmount - originalAmount) >= 0.001) {
             ui.showSeparator();
             ui.showProgressBar(expenseManager.getBudgetData());
         }

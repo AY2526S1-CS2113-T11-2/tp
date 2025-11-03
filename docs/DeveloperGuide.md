@@ -1052,9 +1052,9 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
    - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
-
+![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
 3. **Execution:**  
-   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed — unspecified fields remain the same.
+   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
    When `Main` invokes `command.execute(expenseManager, ui)`:
    - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
@@ -1062,11 +1062,11 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    - A new `Expense` object `edited` is constructed with the updated parameters.
    - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
    - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
-
+![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
 4. **UI Feedback:**
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-   - `ExpenseManager#checkRemainingBalance(ui)` is called to recalculate the budget and display alerts if thresholds are exceeded.
-
+   - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
+![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
 5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 
@@ -1742,8 +1742,14 @@ All tests assume the repository has been cloned and Java 17 is available.
 2. **Edit multiple fields**
     1. Test case: `edit id/1 a/20.00 desc/Lunch at cafe cat/Food`<br>
        **Expected:** All three fields updated.
-
-3. **Invalid edit commands**
+   
+3. **No Change Made**
+   1. Test case: `edit id/1` <br>
+      **Expected:** Shows “No changes were made to the expense” and the expense.
+   2. Test case: `edit id/1 a/20` (same value as before) <br>
+      **Expected:** System detects no changes and displays “No changes were made to the expense” and the expense.
+   
+4. **Invalid edit commands**
     1. Test case: `edit id/999 a/10` (invalid index)<br>
        **Expected:** Error "Expense index must be between 1 and X".
     2. Test case: `edit a/10`<br>
