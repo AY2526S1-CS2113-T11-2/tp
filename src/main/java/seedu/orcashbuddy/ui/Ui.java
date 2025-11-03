@@ -16,7 +16,6 @@ public class Ui {
     private static final int PROGRESS_BAR_WIDTH = 30;
     private static final String NO_BUDGET_LABEL = "[no budget set]";
     private static final double BUDGET_WARNING_THRESHOLD = 0.75;
-    private static final double BUDGET_WARNING_OVER = 1.0;
     private static final double FLOAT_NOISE_THRESHOLD =0.001;
 
     // ANSI color codes for visual budget bar
