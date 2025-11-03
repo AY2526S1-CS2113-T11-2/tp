@@ -100,6 +100,7 @@ Exit the application:                  bye
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - Use this whenever you need a quick reminder of supported commands
 - The help menu is also displayed when you first launch orCASHbuddy
 
@@ -113,7 +114,7 @@ Creates a new expense entry with an amount, description, and optional category.
 **Format:** `add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]`
 
 **Parameters:**
-- `AMOUNT` — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`).
+- `AMOUNT` — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — Tag to group similar expenses. It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters). If omitted, the category defaults to `Uncategorized`.
 
@@ -145,7 +146,7 @@ Defines your total spending budget for expense tracking and alerts.
 **Format:** `setbudget a/AMOUNT`
 
 **Parameters:**
-- `AMOUNT` — Your total budget as a positive number between $0.01 and $1,000,000,000,000 with up to two decimal places
+- `AMOUNT` — Your total budget as a positive number between $0.01 and $1,000,000,000,000 with up to two decimal places. Any digits beyond two decimal places will be ignored.
 
 **Example:**
 ```
@@ -254,7 +255,7 @@ Budget Used: [==============================|]  105.00%  (Over by: $10.00)
 - If no budget is set, you'll see `[no budget set]` instead of the progress bar
 - Only **marked** expenses count toward your total expenses
 - The alert automatically updates to reflect your current financial status
-- Budget percentages are clamped between 0% and 100% for display, but the "Over by" amount shows exact overspending
+- The alert displays "Over by" amount when remaining balance is negative, and "Remaining" amount otherwise.
 
 ---
 
@@ -306,6 +307,7 @@ Here is your list of expenses:
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - If you have no expenses yet, orCASHbuddy suggests adding one with the `add` command
 - The indices shown (1, 2, 3...) are used for `mark`, `unmark`, `edit`, and `delete` commands
 - Marked expenses display `[X]`, unmarked expenses display `[ ]`
@@ -321,7 +323,7 @@ Modifies the amount, description, and/or category of an existing expense. Update
 
 **Parameters:**
 - `INDEX` — Positive integer index of the expense in the list (use `list` to see indices).
-- `AMOUNT` (optional) — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`).
+- `AMOUNT` (optional) — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` (optional) — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters).
 
@@ -511,6 +513,7 @@ Try: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - The sorting is temporary and does not change the order in `list`
 - The numbering shown (1, 2, 3...) is **display-only** and does not correspond to the indices used by `mark`, `unmark`, `edit`, or `delete`
 - Always use `list` to verify the correct index before modifying expenses
@@ -538,6 +541,7 @@ Bye. Hope to see you again soon!
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - You can also terminate the program by closing the terminal window, but using `bye` ensures the farewell message is displayed
 - All data is saved automatically before exiting
 

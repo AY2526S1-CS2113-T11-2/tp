@@ -267,15 +267,15 @@ public class Ui {
         sb.append(']');
         sb.append(ANSI_BLACK); // End color
 
-        // Percentage annotation (clamped 0–100)
-        double pct = Math.max(0.0, Math.min(100.0, ratio * 100.0));
+        // Percentage annotation (clamped above 0)
+        double pct = Math.max(0.0, ratio * 100.0);
         sb.append(' ');
         sb.append(String.format("%.2f%%", pct));
 
         // Over-budget note
-        if (remainingBalance > FLOAT_NOISE_THRESHOLD) {
+        if (remainingBalance >= - FLOAT_NOISE_THRESHOLD) {
             sb.append("  (Remaining: ").append(formatCurrency(remainingBalance)).append(')');
-        } else if (remainingBalance < -FLOAT_NOISE_THRESHOLD) {
+        } else {
             sb.append("  (Over by: ").append(formatCurrency(Math.abs(remainingBalance))).append(')');
         }
 
