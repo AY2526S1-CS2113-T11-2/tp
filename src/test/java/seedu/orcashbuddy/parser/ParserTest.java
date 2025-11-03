@@ -34,6 +34,11 @@ class ParserTest {
     }
 
     @Test
+    void parse_setbudgetMissingAmount_returnsInvalidCommand() {
+        assertInstanceOf(InvalidCommand.class, parser.parse("setbudget"));
+    }
+
+    @Test
     void parse_mark_returnsMarkCommand() {
         assertInstanceOf(MarkCommand.class, parser.parse("mark 2"));
     }

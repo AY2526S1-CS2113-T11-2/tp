@@ -168,7 +168,12 @@ public class Parser {
      */
     private Command parseSetBudgetCommand(String arguments) throws OrCashBuddyException {
         ArgumentParser argParser = new ArgumentParser(arguments);
-        String amountStr = argParser.getValue(AMOUNT_PREFIX);
+        String amountStr;
+        try {
+            amountStr = argParser.getValue(AMOUNT_PREFIX);
+        } catch (OrCashBuddyException e) {
+            throw new OrCashBuddyException("Budget amount is missing. Use: setbudget a/AMOUNT");
+        }
 
         double budget = InputValidator.validateAmount(amountStr,"setbudget");
         return new SetBudgetCommand(budget);
