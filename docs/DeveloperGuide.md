@@ -1742,8 +1742,14 @@ All tests assume the repository has been cloned and Java 17 is available.
 2. **Edit multiple fields**
     1. Test case: `edit id/1 a/20.00 desc/Lunch at cafe cat/Food`<br>
        **Expected:** All three fields updated.
-
-3. **Invalid edit commands**
+   
+3. **No Change Made**
+   1. Test case: `edit id/1` <br>
+      **Expected:** Shows “No changes were made to the expense” and the expense.
+   2. Test case: `edit id/1 a/20` (same value as before) <br>
+      **Expected:** System detects no changes and displays “No changes were made to the expense” and the expense.
+   
+4. **Invalid edit commands**
     1. Test case: `edit id/999 a/10` (invalid index)<br>
        **Expected:** Error "Expense index must be between 1 and X".
     2. Test case: `edit a/10`<br>
