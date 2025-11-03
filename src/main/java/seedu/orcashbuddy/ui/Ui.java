@@ -1,7 +1,7 @@
 package seedu.orcashbuddy.ui;
 
 import seedu.orcashbuddy.expense.Expense;
-import seedu.orcashbuddy.storage.BudgetStatus;
+import seedu.orcashbuddy.storage.BudgetData;
 
 import java.util.List;
 
@@ -15,6 +15,8 @@ public class Ui {
     // ========== Progress bar constants ==========
     private static final int PROGRESS_BAR_WIDTH = 30;
     private static final String NO_BUDGET_LABEL = "[no budget set]";
+    private static final double BUDGET_WARNING_THRESHOLD = 0.75;
+    private static final double BUDGET_WARNING_OVER = 1.0;
 
     // ANSI color codes for visual budget bar
     private static final String ANSI_GREEN = "\u001B[32m";
@@ -48,9 +50,7 @@ public class Ui {
      * @param message the error message to display
      */
     public void showError(String message) {
-        showSeparator();
         System.out.println(message);
-        showSeparator();
     }
 
     // ========== Welcome and Goodbye messages ==========
@@ -168,34 +168,6 @@ public class Ui {
         System.out.println("Your total budget is now " + formatCurrency(budget) + ".");
     }
 
-    /**
-     * Displays the user's budget.
-     *
-     * @param budget the budget amount
-     */
-    public void showBudget(double budget) {
-        System.out.println("Budget set: " + formatCurrency(budget));
-    }
-
-    //@@author gumingyoujia
-    /**
-     * Displays the total expenses so far.
-     *
-     * @param totalExpense the total amount of expenses
-     */
-    private void showTotalExpenses(double totalExpense) {
-        System.out.println("Total expenses: " + formatCurrency(totalExpense));
-    }
-
-    /**
-     * Displays the remaining balance after expenses.
-     *
-     * @param remainingBalance the remaining balance amount
-     */
-    private void showRemainingBalance(double remainingBalance) {
-        System.out.println("Remaining balance: " + formatCurrency(remainingBalance));
-    }
-
     //@@author
     /**
      * Formats a double-precision amount as a currency string, e.g. {@code $12.34}.
@@ -220,17 +192,22 @@ public class Ui {
      */
     public void showFinancialSummary(double budget, double totalExpense,
                                      double remainingBalance, List<Expense> expenses) {
-        System.out.println("FINANCIAL SUMMARY");
-        showBudget(budget);
-        showTotalExpenses(totalExpense);
-        showRemainingBalance(remainingBalance);
-
-        System.out.println();
-        System.out.println("BUDGET STATUS");
         showProgressBar(budget, totalExpense, remainingBalance);
 
         System.out.println();
         showExpenseList(expenses);
+    }
+
+    /**
+     * Displays budget, total spent, remaining balance,
+     * a progress bar, and the full list of expenses.
+     *
+     * @param budgetData the budget data containing budget, total expenses, and remaining balance
+     * @param expenses   all tracked expenses
+     */
+    public void showFinancialSummary(BudgetData budgetData, List<Expense> expenses) {
+        showFinancialSummary(budgetData.budget(), budgetData.totalExpenses(),
+                           budgetData.remainingBalance(), expenses);
     }
 
     //@@author aydrienlaw
@@ -245,7 +222,9 @@ public class Ui {
      * @param budget       the configured budget
      * @param totalExpense how much has been spent
      */
-    private void showProgressBar(double budget, double totalExpense,  double remainingBalance) {
+    public void showProgressBar(double budget, double totalExpense,  double remainingBalance) {
+        System.out.println("BUDGET STATUS");
+
         if (budget <= 0) {
             System.out.println(NO_BUDGET_LABEL);
             return;
@@ -255,9 +234,9 @@ public class Ui {
 
         // Determine string colour based on budget usage
         String colour;
-        if (ratio > 1.0) {
+        if (ratio > BUDGET_WARNING_OVER) {
             colour = ANSI_RED;
-        } else if (ratio >= 0.7) {
+        } else if (ratio >= BUDGET_WARNING_THRESHOLD) {
             colour = ANSI_YELLOW;
         } else {
             colour = ANSI_GREEN;
@@ -295,13 +274,22 @@ public class Ui {
 
         // Over-budget note
         if (remainingBalance > 0) {
-            sb.append("  (Over by ").append(formatCurrency(remainingBalance)).append(')');
-        } else if (ratio < 0) {
             sb.append("  (Remaining: ").append(formatCurrency(remainingBalance)).append(')');
+        } else if (ratio < 0) {
+            sb.append("  (Over by: ").append(formatCurrency(remainingBalance)).append(')');
         }
 
         System.out.println("Spent: " + formatCurrency(totalExpense) + " / " + formatCurrency(budget));
-        System.out.println(sb.toString());
+        System.out.println(sb);
+    }
+
+    /**
+     * Overloaded version of showProgressBar that accepts a BudgetData object.
+     *
+     * @param budgetData the budget data containing budget, total expenses, and remaining balance
+     */
+    public void showProgressBar(BudgetData budgetData) {
+        showProgressBar(budgetData.budget(), budgetData.totalExpenses(), budgetData.remainingBalance());
     }
 
     //@@author gumingyoujia
@@ -442,27 +430,4 @@ public class Ui {
         System.out.println("Unknown command. Type 'help' to see available commands.");
     }
 
-    // ========== Budget alert methods ==========
-    //@@author gumingyoujia
-    /**
-     * Displays a warning or alert based on the user's current {@link BudgetStatus}.
-     * For example, if spending exceeds the budget, prints an "exceeded budget" alert.
-     *
-     * @param status    the computed budget status
-     * @param remaining the remaining balance (may be negative if exceeded)
-     */
-    public void showBudgetStatus(BudgetStatus status, double remaining) {
-        switch (status) {
-        case EXCEEDED -> {
-            System.out.println("Alert: You have exceeded your budget!");
-            System.out.println("Remaining balance: " + formatCurrency(remaining));
-        }
-        case EQUAL -> System.out.println("Alert: You have used up your budget!");
-        case NEAR -> {
-            System.out.println("Alert: Your remaining balance is low.");
-            System.out.println("Remaining balance: " + formatCurrency(remaining));
-        }
-        default -> { /* no-op */ }
-        }
-    }
 }

@@ -27,5 +27,7 @@ public class SetBudgetCommand extends Command {
         expenseManager.setBudget(budget);
         ui.showNewBudget(budget);
         ui.showSeparator();
+        ui.showProgressBar(expenseManager.getBudgetData());
+        ui.showSeparator();
     }
 }

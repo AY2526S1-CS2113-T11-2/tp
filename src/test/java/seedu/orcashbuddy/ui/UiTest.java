@@ -4,7 +4,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import seedu.orcashbuddy.expense.Expense;
-import seedu.orcashbuddy.storage.BudgetStatus;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -53,7 +52,7 @@ class UiTest {
         ui.showFinancialSummary(100.0, 17.70, 82.30, expenses);
 
         String output = capturedOutput();
-        assertTrue(output.contains("FINANCIAL SUMMARY"));
+        assertTrue(output.contains("BUDGET STATUS"));
         assertTrue(output.contains("Lunch"));
         assertTrue(output.contains("Coffee"));
     }
@@ -63,27 +62,5 @@ class UiTest {
         ArrayList<Expense> emptyList = new ArrayList<>();
         ui.showFinancialSummary(0.0, 0.0, 0.0, emptyList);
         assertTrue(capturedOutput().contains("No expenses added so far."));
-    }
-
-    @Test
-    void showBudgetStatus_handlesDifferentStatuses() {
-        ui.showBudgetStatus(BudgetStatus.EXCEEDED, -12.3);
-        String output = capturedOutput();
-        assertTrue(output.contains("exceeded your budget"));
-
-        out.reset();
-        ui.showBudgetStatus(BudgetStatus.NEAR, 15.0);
-        output = capturedOutput();
-        assertTrue(output.contains("remaining balance is low"));
-
-        out.reset();
-        ui.showBudgetStatus(BudgetStatus.EQUAL, 0.0);
-        output = capturedOutput();
-        assertTrue(output.contains("used up your budget"));
-
-        out.reset();
-        ui.showBudgetStatus(BudgetStatus.OK, 80.0);
-        output = capturedOutput();
-        assertTrue(output.isBlank(), "OK status should not print alerts");
     }
 }

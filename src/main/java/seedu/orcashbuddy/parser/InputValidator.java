@@ -20,6 +20,19 @@ import seedu.orcashbuddy.expense.Expense;
  */
 public class InputValidator {
 
+    /**
+     * Maximum allowed amount to prevent precision loss with double representation.
+     * Set to 1 trillion, which is well within double precision limits.
+     */
+    private static final double MAX_AMOUNT = 1_000_000_000_000.0; // 1 trillion
+
+    /**
+     * Regex pattern for validating category format.
+     * Must start with a letter and contain only letters, numbers, spaces, or hyphens.
+     * Maximum length is 20 characters.
+     */
+    private static final String CATEGORY_PATTERN = "[A-Za-z][A-Za-z0-9\\s-]{0,19}";
+
     //@@author limzerui
 
     /**
@@ -39,11 +52,19 @@ public class InputValidator {
         try {
             amount = Double.parseDouble(amountStr);
         } catch (NumberFormatException e) {
-            throw OrCashBuddyException.invalidAmount(amountStr, e);
+            throw OrCashBuddyException.invalidAmount(amountStr);
+        }
+
+        if (Double.isNaN(amount) || Double.isInfinite(amount)) {
+            throw OrCashBuddyException.invalidAmount(amountStr);
         }
 
         if (amount < 0.01) {
             throw OrCashBuddyException.amountNotPositive(amountStr);
+        }
+
+        if (amount > MAX_AMOUNT) {
+            throw OrCashBuddyException.amountTooLarge(amountStr);
         }
 
         return amount;
@@ -89,8 +110,7 @@ public class InputValidator {
 
         ensureAscii(trimmed, "Category");
 
-        // Magic String
-        if (!trimmed.matches("[A-Za-z][A-Za-z0-9\\s-]{0,19}")) {
+        if (!trimmed.matches(CATEGORY_PATTERN)) {
             throw OrCashBuddyException.invalidCategory(trimmed);
         }
 
@@ -121,9 +141,9 @@ public class InputValidator {
             return index;
         } catch (NumberFormatException e) {
             if (trimmed.matches("-?\\d+")) {
-                return Integer.MAX_VALUE;
+                throw OrCashBuddyException.expenseIndexTooLarge();
             }
-            throw OrCashBuddyException.invalidExpenseIndex(e);
+            throw OrCashBuddyException.invalidExpenseIndex();
         }
     }
 

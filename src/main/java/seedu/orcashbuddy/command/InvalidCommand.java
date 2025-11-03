@@ -49,49 +49,34 @@ public class InvalidCommand extends Command {
         ui.showSeparator();
     }
 
+    //@@author limzerui
     /**
-     * Shows appropriate usage message based on error context.
+     * Shows appropriate usage message based on error message content.
+     * All errors display both the error message and a usage hint based on the command type.
      *
      * @param errorMessage the error message from the exception
      * @param ui the UI to display contextual usage
      */
     private void showContextualUsage(String errorMessage, Ui ui) {
-        System.out.println(errorMessage);
+        ui.showError(errorMessage);
 
-        if (errorMessage.contains("'edit'")) {
+        // Show usage hints based on string matching
+        if (errorMessage.contains("'edit'") || errorMessage.contains("id/")) {
             ui.showEditUsage();
-            return;
-        }
-
-        if (errorMessage.contains("find") || errorMessage.contains("search criteria") ||
+        } else if (errorMessage.contains("find") || errorMessage.contains("search criteria") ||
                 errorMessage.contains("search criterion")) {
             ui.showFindUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'add'") || errorMessage.contains("desc/") ||
-                errorMessage.contains("Description") || errorMessage.contains("cat/") ||
-                errorMessage.contains("Category")) {
+        } else if (errorMessage.contains("'add'") || errorMessage.contains("a/") ||
+                errorMessage.contains("desc/") || errorMessage.contains("Description") ||
+                errorMessage.contains("cat/") || errorMessage.contains("Category")) {
             ui.showAddUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'delete'")) {
+        } else if (errorMessage.contains("'delete'")) {
             ui.showDeleteUsage();
-            return;
-        }
-
-        if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
+        } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
             ui.showSetBudgetUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'mark'")) {
+        } else if (errorMessage.contains("'mark'")) {
             ui.showMarkUsage();
-            return;
-        }
-
-        if (errorMessage.contains("'unmark'")) {
+        } else if (errorMessage.contains("'unmark'")) {
             ui.showUnmarkUsage();
         }
     }

@@ -62,7 +62,7 @@ public class ArgumentParser {
         ensureParsed();
         String value = parsedValues.get(prefix);
         if (value == null) {
-            throw new OrCashBuddyException("Missing prefix: " + prefix);
+            throw OrCashBuddyException.missingPrefix(prefix);
         }
         return value;
     }

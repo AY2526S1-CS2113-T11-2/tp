@@ -3,7 +3,6 @@ package seedu.orcashbuddy.command;
 
 import seedu.orcashbuddy.exception.OrCashBuddyException;
 import seedu.orcashbuddy.expense.Expense;
-import seedu.orcashbuddy.storage.BudgetStatus;
 import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.ui.Ui;
 
@@ -38,16 +37,19 @@ public class DeleteCommand extends Command {
     public void execute(ExpenseManager expenseManager, Ui ui) throws OrCashBuddyException {
         assert index >= 1 : "Index must be at least 1";
 
+        Expense expenseToDelete = expenseManager.getExpense(index);
+        boolean wasMarked = expenseToDelete.isMarked();
+
         Expense removedExpense = expenseManager.deleteExpense(index);
 
         LOGGER.log(Level.INFO, "Deleted expense at index {0}: {1}",
                 new Object[]{index, removedExpense.getDescription()});
 
+        ui.showSeparator();
         ui.showDeletedExpense(removedExpense);
-        BudgetStatus status = expenseManager.determineBudgetStatus();
-        if (status != BudgetStatus.OK) {
-            double remainingBalance = expenseManager.getRemainingBalance();
-            ui.showBudgetStatus(status, remainingBalance);
+        if (wasMarked) {
+            ui.showSeparator();
+            ui.showProgressBar(expenseManager.getBudgetData());
         }
         ui.showSeparator();
     }

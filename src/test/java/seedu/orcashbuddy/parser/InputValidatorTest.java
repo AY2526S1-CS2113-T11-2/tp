@@ -42,6 +42,41 @@ class InputValidatorTest {
     }
 
     @Test
+    void validateAmount_nan_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateAmount("NaN", COMMAND));
+    }
+
+    @Test
+    void validateAmount_infinity_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateAmount("Infinity", COMMAND));
+    }
+
+    @Test
+    void validateAmount_negativeInfinity_throws() {
+        assertThrows(OrCashBuddyException.class, () -> InputValidator.validateAmount("-Infinity", COMMAND));
+    }
+
+    @Test
+    void validateAmount_maximumAllowed_allowed() throws Exception {
+        // 1 trillion should be accepted
+        assertEquals(1_000_000_000_000.0, InputValidator.validateAmount("1000000000000", COMMAND), 1e-6);
+    }
+
+    @Test
+    void validateAmount_exceedsMaximum_throws() {
+        // Over 1 trillion should be rejected
+        assertThrows(OrCashBuddyException.class, () ->
+            InputValidator.validateAmount("1000000000001", COMMAND));
+    }
+
+    @Test
+    void validateAmount_veryLargeWithPrecisionLoss_throws() {
+        // User's example - 26 digits that would lose precision
+        assertThrows(OrCashBuddyException.class, () ->
+            InputValidator.validateAmount("22222222222222222222222222", COMMAND));
+    }
+
+    @Test
     void validateDescription_valid_returnsTrimmed() throws Exception {
         assertEquals("Lunch", InputValidator.validateDescription("  Lunch  ", COMMAND));
     }

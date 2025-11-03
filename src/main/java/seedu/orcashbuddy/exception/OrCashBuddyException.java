@@ -7,6 +7,12 @@ package seedu.orcashbuddy.exception;
 public class OrCashBuddyException extends Exception {
 
     /**
+     * Threshold for detecting integer overflow when parsing expense indices.
+     * If an index is within this range of Integer.MAX_VALUE, it's considered overflow.
+     */
+    private static final int INDEX_OVERFLOW_THRESHOLD = 1000;
+
+    /**
      * Creates a new OrCashBuddyException with the specified message.
      *
      * @param message the exception message
@@ -25,25 +31,27 @@ public class OrCashBuddyException extends Exception {
         super(message, cause);
     }
 
-    //@@author limzerui
-    // ========== Amount-Related Exceptions ==========
+    // ========== Prefix-Related Exceptions ==========
     /**
-     * Creates an exception for missing amount prefix 'a/'.
+     * Creates an exception for missing prefix in command arguments.
      *
-     * @return OrCashBuddyException for missing amount prefix
+     * @param prefix the missing prefix (e.g., "a/", "desc/")
+     * @return OrCashBuddyException for missing prefix
      */
-    public static OrCashBuddyException missingAmountPrefix() {
-        return new OrCashBuddyException("Missing amount prefix 'a/'");
+    public static OrCashBuddyException missingPrefix(String prefix) {
+        return new OrCashBuddyException("Missing prefix: " + prefix);
     }
 
+    //@@author limzerui
+    // ========== Amount-Related Exceptions ==========
     /**
      * Creates an exception for empty amount field.
      *
      * @return OrCashBuddyException for empty amount
      */
     public static OrCashBuddyException emptyAmount(String commandName) {
-        return new OrCashBuddyException("Amount is missing after 'a/' " +
-                "after '" + commandName + "' command");
+        return new OrCashBuddyException("Amount missing after 'a/' " +
+                "for '" + commandName + "' command");
     }
 
     /**
@@ -53,19 +61,9 @@ public class OrCashBuddyException extends Exception {
      * @return OrCashBuddyException for invalid amount
      */
     public static OrCashBuddyException invalidAmount(String amountStr) {
-        return new OrCashBuddyException("Amount is not a valid decimal: " + amountStr);
+        return new OrCashBuddyException("Amount is not numeric: " + amountStr);
     }
-
-    /**
-     * Creates an exception for invalid amount format with cause.
-     *
-     * @param amountStr the invalid amount string
-     * @param cause the underlying parsing exception
-     * @return OrCashBuddyException for invalid amount
-     */
-    public static OrCashBuddyException invalidAmount(String amountStr, Throwable cause) {
-        return new OrCashBuddyException("Amount is not a valid decimal: " + amountStr, cause);
-    }
+    //@@author
 
     /**
      * Creates an exception for non-positive amounts.
@@ -77,16 +75,17 @@ public class OrCashBuddyException extends Exception {
         return new OrCashBuddyException("Amount must be at least $0.01: " + amountStr);
     }
 
-    // ========== Description-Related Exceptions ==========
-
     /**
-     * Creates an exception for missing description prefix 'desc/'.
+     * Creates an exception for amounts that are too large.
      *
-     * @return OrCashBuddyException for missing description prefix
+     * @param amountStr the invalid amount string
+     * @return OrCashBuddyException for amount too large
      */
-    public static OrCashBuddyException missingDescriptionPrefix() {
-        return new OrCashBuddyException("Missing description prefix 'desc/'");
+    public static OrCashBuddyException amountTooLarge(String amountStr) {
+        return new OrCashBuddyException("Amount is too large and would lose precision: " + amountStr);
     }
+
+    // ========== Description-Related Exceptions ==========
 
     /**
      * Creates an exception for empty description field.
@@ -95,7 +94,7 @@ public class OrCashBuddyException extends Exception {
      */
     public static OrCashBuddyException emptyDescription(String commandName) {
         return new OrCashBuddyException("Description is missing after 'desc/' " +
-                "after '" + commandName + "' command");
+                "for '" + commandName + "' command");
     }
 
     /**
@@ -104,7 +103,7 @@ public class OrCashBuddyException extends Exception {
      * @return OrCashBuddyException for empty category
      */
     public static OrCashBuddyException emptyCategory(String commandName) {
-        return new OrCashBuddyException("Category is missing after 'cat/' after '"
+        return new OrCashBuddyException("Category is missing after 'cat/' for '"
                 + commandName + "' command");
     }
 
@@ -153,13 +152,12 @@ public class OrCashBuddyException extends Exception {
     }
 
     /**
-     * Creates an exception for invalid expense index format with cause.
+     * Creates an exception for expense index that is too large to process.
      *
-     * @param cause the underlying parsing exception
-     * @return OrCashBuddyException for invalid index format
+     * @return OrCashBuddyException for index overflow
      */
-    public static OrCashBuddyException invalidExpenseIndex(Throwable cause) {
-        return new OrCashBuddyException("Expense index must be an integer", cause);
+    public static OrCashBuddyException expenseIndexTooLarge() {
+        return new OrCashBuddyException("Expense index is too large to process");
     }
 
     //@@author muadzyamani
@@ -184,7 +182,7 @@ public class OrCashBuddyException extends Exception {
             return emptyExpenseList();
         }
 
-        if (index >= Integer.MAX_VALUE - 1000) {
+        if (index >= Integer.MAX_VALUE - INDEX_OVERFLOW_THRESHOLD) {
             return new OrCashBuddyException(
                     "Expense index must be between 1 and " + maxIndex +
                             ". The number entered is too large to process");
@@ -193,19 +191,7 @@ public class OrCashBuddyException extends Exception {
         return new OrCashBuddyException(
                 "Expense index must be between 1 and " + maxIndex + ", but got " + index);
     }
-
-    //@@author aydrienlaw
-    // ========== Budget-Related Exceptions ==========
-
-    /**
-     * Creates an exception for missing budget amount.
-     *
-     * @return OrCashBuddyException for missing budget
-     */
-    public static OrCashBuddyException missingBudgetAmount() {
-        return new OrCashBuddyException("Missing budget amount");
-    }
-
+    
     // ========== Expense List Exceptions ==========
 
     /**

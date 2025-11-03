@@ -6,11 +6,9 @@ import org.junit.jupiter.api.Test;
 import seedu.orcashbuddy.expense.Expense;
 import seedu.orcashbuddy.storage.ExpenseManager;
 import seedu.orcashbuddy.ui.Ui;
-import seedu.orcashbuddy.storage.BudgetStatus;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -32,7 +30,6 @@ class DeleteCommandTest {
         Double seenBudget= null;
         Double seenRemaining = null;
         List<Expense> lastListedExpenses;
-        boolean budgetStatusShown = false;
 
         @Override
         public void showDeletedExpense(Expense expense) {
@@ -46,11 +43,6 @@ class DeleteCommandTest {
             this.seenBudget = budget;
             this.seenRemaining = remainingBalance;
             this.lastListedExpenses = expenses;
-        }
-
-        @Override
-        public void showBudgetStatus(BudgetStatus status, double remaining) {
-            this.budgetStatusShown = true;
         }
     }
 
@@ -100,29 +92,6 @@ class DeleteCommandTest {
         new ListCommand().execute(manager, ui);
         assertEquals(0.00, ui.seenTotal, 1e-6);
         assertEquals(200.00, ui.seenRemaining, 1e-6);
-    }
-
-    /**
-     * Tests that deleting an unmarked expense while the budget status is non-OK
-     * (e.g., NEAR or EXCEEDED) correctly triggers the UI to display the budget status.
-     * <p>
-     * This ensures that {@code DeleteCommand} prompts the user about their current
-     * budget situation when removing unmarked expenses under constrained budgets.
-     */
-    @Test
-    void execute_deleteUnmarkedWithNonOkBudgetStatus_showsBudgetStatus() throws Exception {
-        new AddCommand(3.00, "Coffee").execute(manager, ui);
-        new SetBudgetCommand(18.00).execute(manager, ui);
-        new MarkCommand(1).execute(manager, ui);
-        new MarkCommand(2).execute(manager, ui);
-        ui.budgetStatusShown = false;
-        // Delete the UNMARKED expense (index 3, Coffee $3.00)
-        new DeleteCommand(3).execute(manager, ui);
-        // After delete: budget=$18, total=$15, remaining=$3 (still NEAR)
-        // This deletes an unmarked expense while status is non-OK
-        assertTrue(ui.budgetStatusShown, "Budget status should be displayed");
-        assertEquals(3.00, manager.getRemainingBalance(), 1e-6);
-        assertEquals(BudgetStatus.NEAR, manager.determineBudgetStatus());
     }
 
 }
