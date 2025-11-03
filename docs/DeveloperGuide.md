@@ -1054,6 +1054,7 @@ The find operation performs case-insensitive substring matching, prioritizing ea
 1. **Input capture:** `Main` reads the raw command line (`find cat/groceries` or `find desc/lunch`) and forwards it to `Parser`.
 
 2. **Input parsing and Command Creation:**  
+   ![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
    The user inputs an edit command in the form:
    ```
    edit /id<index> /a<amount> /desc<description> /cat<category>
@@ -1061,21 +1062,23 @@ The find operation performs case-insensitive substring matching, prioritizing ea
    The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
    - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
-![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
+
 3. **Execution:**  
    The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
+   ![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
    When `Main` invokes `command.execute(expenseManager, ui)`:
    - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
    - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
    - A new `Expense` object `edited` is constructed with the updated parameters.
    - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
    - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
-![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
+
 4. **UI Feedback:**
+   ![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
    - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
-![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
+
 5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 
