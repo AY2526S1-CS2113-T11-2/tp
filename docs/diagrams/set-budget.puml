@@ -1,0 +1,106 @@
+@startuml
+!theme vibrant
+actor User
+participant ":Main" as Main
+participant ":Parser" as Parser
+participant ":ArgumentParser" as ArgumentParser
+participant ":InputValidator" as InputValidator
+participant ":SetBudgetCommand" as SetBudgetCommand
+participant ":InvalidCommand" as InvalidCommand
+participant ":ExpenseManager" as ExpenseManager
+participant ":Ui" as Ui
+
+activate Main
+
+User -> Main : enters "setbudget a/500"
+
+Main -> Parser : parse("setbudget a/500")
+activate Parser
+
+Parser -> Parser : parseSetBudgetCommand("a/500")
+activate Parser
+
+create ArgumentParser
+Parser -> ArgumentParser : "a/500"
+activate ArgumentParser
+Parser -> ArgumentParser : getValue("a/")
+ArgumentParser --> Parser : "500"
+deactivate ArgumentParser
+
+alt valid amount
+
+    Parser -> InputValidator : validateAmount("500", "setbudget")
+    activate InputValidator
+    InputValidator --> Parser : 500.00
+    deactivate InputValidator
+
+    create SetBudgetCommand
+    Parser -> SetBudgetCommand : SetBudgetCommand(500.00)
+    activate SetBudgetCommand
+    SetBudgetCommand -> Parser : SetBudgetCommand
+    deactivate SetBudgetCommand
+
+    Parser --> Main : SetBudgetCommand
+
+else invalid amount
+
+    Parser -> InputValidator : validateAmount("invalid", "setbudget")
+    activate InputValidator
+    InputValidator -->> Parser : throws OrCashBuddyException e
+    deactivate InputValidator
+
+    deactivate Parser
+
+    create InvalidCommand
+    Parser -> InvalidCommand: InvalidCommand(e)
+    activate InvalidCommand
+    InvalidCommand -> Parser : InvalidCommand
+    deactivate InvalidCommand
+    Parser --> Main : InvalidCommand
+end
+
+    deactivate Parser
+    destroy ArgumentParser
+
+alt command is SetBudgetCommand
+    Main -> SetBudgetCommand : execute(expenseManager, ui)
+    activate SetBudgetCommand
+
+
+    SetBudgetCommand -> ExpenseManager : setBudget(500.0)
+    activate ExpenseManager
+    deactivate ExpenseManager
+
+    SetBudgetCommand -> Ui : showNewBudget(500.0)
+    activate Ui
+    Ui --> User : displays confirmation
+    deactivate Ui
+
+    SetBudgetCommand -> Ui : showProgressBar(...)
+    activate Ui
+    Ui --> User : displays budget usage bar
+    deactivate Ui
+
+    deactivate SetBudgetCommand
+    destroy SetBudgetCommand
+
+else command is InvalidCommand
+    Main -> InvalidCommand : execute(expenseManager, ui)
+    activate InvalidCommand
+
+    InvalidCommand -> Ui : showError(...)
+    activate Ui
+    Ui --> User : displays error message
+    deactivate Ui
+
+    InvalidCommand -> Ui : showContextualUsage()
+    activate Ui
+    Ui --> User : displays usage message
+    deactivate Ui
+
+    deactivate InvalidCommand
+    destroy InvalidCommand
+end
+
+deactivate Main
+@enduml
