@@ -625,23 +625,6 @@ This design prevents inconsistencies where remaining balance might drift from th
 
 <br>
 
-#### Error Handling Strategy
-
-**Missing or invalid amounts:**
-If the user enters `setbudget` without an amount or with invalid input:
-- `InvalidCommand` wraps the `OrCashBuddyException` from parsing
-- `InvalidCommand#execute()` calls `Ui#showSetBudgetUsage()` to display correct format
-- Application continues without modifying the budget
-
-Example error messages:
-- `"Missing amount prefix 'a/'"` → shows usage
-- `"Amount is not a valid decimal: abc"` → shows usage
-- `"Amount must be greater than 0: -50.00"` → shows usage
-
-**Floating-point precision:**
-Budget amounts are stored as double primitives. While this introduces potential floating-point errors, the `recalculateRemainingBalance()` assertion uses a tolerance of 0.001 to catch significant deviations without triggering false positives from typical floating-point arithmetic.
-
-<br>
 
 #### Alternatives Considered
 
