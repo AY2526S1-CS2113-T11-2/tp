@@ -1054,7 +1054,7 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
 
 3. **Execution:**  
-   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed — unspecified fields remain the same.
+   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
    When `Main` invokes `command.execute(expenseManager, ui)`:
    - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
@@ -1065,7 +1065,7 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
 
 4. **UI Feedback:**
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-   - `ExpenseManager#checkRemainingBalance(ui)` is called to recalculate the budget and display alerts if thresholds are exceeded.
+   - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
 
 5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.

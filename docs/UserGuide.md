@@ -75,7 +75,7 @@ Creates a new expense entry with an amount, description, and optional category.
 **Format:** `add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]`
 
 **Parameters:**
-- `AMOUNT` — Positive number up to two decimal places (e.g., `12.50`).
+- `AMOUNT` — Positive number up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — Tag to group similar expenses. It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters). If omitted, the category defaults to `Uncategorized`.
 
@@ -99,7 +99,7 @@ Edit the amount and/or the description and/or the category of an expense. Update
 
 **Parameters:**
 - `INDEX` — Positive integer index of the expense in the list.
-- `AMOUNT` (optional) — Positive number up to two decimal places (e.g., `12.50`).
+- `AMOUNT` (optional) — Positive number up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` (optional) — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters).
 
