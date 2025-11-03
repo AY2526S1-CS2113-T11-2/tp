@@ -33,21 +33,12 @@ activate ListCommand
 
 ListCommand -> Ui : showSeparator()
 activate Ui
+Ui --> User : displays separator
 deactivate Ui
 
-ListCommand -> ExpenseManager : getBudget()
+ListCommand -> ExpenseManager : getBudgetData()
 activate ExpenseManager
-ExpenseManager --> ListCommand : budget
-deactivate ExpenseManager
-
-ListCommand -> ExpenseManager : getTotalExpenses()
-activate ExpenseManager
-ExpenseManager --> ListCommand : totalExpenses
-deactivate ExpenseManager
-
-ListCommand -> ExpenseManager : getRemainingBalance()
-activate ExpenseManager
-ExpenseManager --> ListCommand : remainingBalance
+ExpenseManager --> ListCommand : budgetData
 deactivate ExpenseManager
 
 ListCommand -> ExpenseManager : getExpenses()
@@ -55,13 +46,14 @@ activate ExpenseManager
 ExpenseManager --> ListCommand : expenses
 deactivate ExpenseManager
 
-ListCommand -> Ui : showFinancialSummary(budget, totalExpenses, remainingBalance, expenses)
+ListCommand -> Ui : showFinancialSummary(budgetData, expenses)
 activate Ui
 Ui --> User : displays financial summary and expense list
 deactivate Ui
 
 ListCommand -> Ui : showSeparator()
 activate Ui
+Ui --> User : displays separator
 deactivate Ui
 
 deactivate ListCommand

@@ -644,9 +644,11 @@ Potential enhancements include category-specific budgets, time-based budget peri
 
 #### Overview
 
-The List Feature displays all recorded expenses along with a real-time financial summary. This includes the user's current budget, total spending, remaining balance, and a visual progress bar that indicates budget utilization.
+The List Feature displays all recorded expenses along with a real-time financial summary.  
+This summary includes the user's total budget, total spending, and a color-coded progress bar that visually represents budget usage.
 
-The `list` command serves as a core read-only function within the application, offering users an at-a-glance understanding of their financial status and detailed visibility into all tracked expenses.
+The `list` command is a read-only operation that allows users to view their current financial status and track expenses at any point without altering stored data.
+
 
 <br>
 
@@ -660,25 +662,24 @@ The `list` command serves as a core read-only function within the application, o
 1. **Input Capture:** `Main` reads the user's command (`list`) and forwards it to `Parser`.
 2. **Command Creation:** `Parser` recognizes the `list` keyword and directly constructs a new `ListCommand` object. No arguments are expected or parsed for this command.
 3. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`, which retrieves financial data from `ExpenseManager` and passes it to `ui.showFinancialSummary()` for display.
-4. **Data Persistence:** The `list` command is a read-only operation that does not modify application data.
 
 <br>
 
 #### Logic & Validation
 
 The list command performs minimal validation, accepting no parameters. The main logic involves:
-- Retrieving budget information via `getBudget()`, `getTotalExpenses()`, and `getRemainingBalance()`
+- Retrieving budget information via `getBudgetData()`
 - Fetching all expenses via `getExpenses()`
 - Calculating the budget usage ratio for progress bar color-coding (green < 75%, yellow 75-100%, red > 100%)
-- Displaying expenses in numbered format or showing "no expenses added" message if the list is empty
+- Displaying expenses in numbered format or showing "no expenses added so far" message if the list is empty
 
 <br>
 
 #### Error Handling Strategy
 
 The list command has minimal error handling needs:
-- No user input validation required as the command accepts no parameters
-- Handles empty expense list gracefully by displaying "no expenses added" message
+- Throws exception if extra parameters are received by the parser as list accepts no parameters
+- Handles empty expense list gracefully by displaying "no expenses added so far" message
 - Budget division-by-zero scenarios are prevented by displaying "no budget set" when budget is 0
 - All exceptions from `ExpenseManager` data retrieval are allowed to propagate to `Main` for consistent error handling
 - Display errors are managed by the `Ui` component
