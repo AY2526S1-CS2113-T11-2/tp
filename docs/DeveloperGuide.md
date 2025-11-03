@@ -31,7 +31,7 @@ This Developer Guide (DG) introduces the internals of **orCASHbuddy**, outlines 
    8. [Storage Management Feature](#storage-management-feature)
    9. [Graceful Exit](#graceful-exit)
    10. [Help Feature](#help-feature)
-   11. [List Feature](#List-feature)
+   11. [List Feature](#list-feature)
 5. [Appendix A: Product Scope](#appendix-a-product-scope)
 6. [Appendix B: User Stories](#appendix-b-user-stories)
 7. [Appendix C: Non-Functional Requirements](#appendix-c-non-functional-requirements)
@@ -105,9 +105,9 @@ The `UI` provides several visual aids for better user experience:
 ```
 Budget Used: [=============|----------------]  45.50%  (Remaining: $54.50)
 ```
-- Green (0-70%): Safe spending range
-- Yellow (70-100%): Approaching budget limit
-- Red (>100%): Over budget
+- Green (< 75%): Safe spending range
+- Yellow (75-100%): Approaching budget limit
+- Red (> 100%): Over budget
 
 **Status Icons:** Visual markers for expense payment status:
 - `[X]` — Marked as paid (included in budget calculations)
@@ -313,10 +313,7 @@ The `Model` component represents the application's core data and business logic.
 - Central business logic class managing all expenses and budget state
 - Maintains invariants through validation and assertions
 - Provides operations consumed by commands
-
-**BudgetStatus (Enum):**
-- Represents financial health: `OK`, `NEAR`, `EQUAL`, `EXCEEDED`
-- Used to trigger budget alerts in UI
+- Exposes budget data via `BudgetData` record for UI to display progress bar
 
 <br>
 
@@ -329,6 +326,8 @@ The `Model` component represents the application's core data and business logic.
 5. **Expense Validity:** All expenses must have positive amounts, non-blank descriptions, and valid categories
 
 ***
+
+The Model component works in conjunction with the Storage component to persist data across application sessions.
 
 ## Storage Component
 
@@ -407,9 +406,11 @@ ExpenseManager manager = StorageManager.loadExpenseManager(ui)
 
 ---
 
+Having covered the architectural design of orCASHbuddy's components, the following section examines the implementation details of key features, illustrating how the components work together to deliver functionality.
+
 ## Implementation
 
-This section describes some noteworthy details on how certain features are implemented.
+This section describes noteworthy implementation details for key features, showing how the UI, Logic, Model, and Storage components collaborate to handle user commands.
 
 <br>
 
@@ -417,7 +418,7 @@ This section describes some noteworthy details on how certain features are imple
 
 #### Overview
 
-The add-expense workflow transforms a single line of user input into a populated `Expense` object, updates the in-memory ledger, and provides immediate feedback in the console. We chose a prefix-based syntax (`add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]`).
+The add-expense workflow transforms a single line of user input into a populated `Expense` object, updates the in-memory ledger, and provides immediate feedback in the console. The application uses a prefix-based syntax (`add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]`) for clarity and consistency.
 
 <br>
 
@@ -429,7 +430,7 @@ The add-expense workflow transforms a single line of user input into a populated
 #### Control Flow
 
 1. **Input capture:** `Main` reads the raw line and forwards it to `Parser`.
-2. **Tokenisation:** `Parser` uses `ArgumentParser` to extract the amount, description, and category from the raw input. Required prefixes (`a/`, `desc/`) trigger `OrCashBuddyException` if missing, ensuring we fail fast.
+2. **Tokenisation:** `Parser` uses `ArgumentParser` to extract the amount, description, and category from the raw input. Required prefixes (`a/`, `desc/`) trigger `OrCashBuddyException` if missing, ensuring fast failure on invalid input.
 3. **Validation:** `InputValidator` is then used to validate the extracted values. It converts the amount into a double (rejecting non-positive or malformed numbers), trims the description while enforcing ASCII-only input, and normalises the optional category. Categories must start with an alphabetic character, remain within ASCII, and may include spaces or hyphens; invalid values raise explicit exceptions so `Ui` can present informative error messages.
 4. **Command creation:** A new `AddCommand` instance is constructed with the validated primitives. All downstream logic remains immutable; there is no shared mutable state between parser and command.
 5. **Execution:** `AddCommand#execute` wraps the primitives into an `Expense`, calls `ExpenseManager#addExpense`, and then defers to `Ui#showNewExpense`.
@@ -440,7 +441,7 @@ The sequence diagram in `docs/diagrams/add-sequence.puml` illustrates the intera
 
 `ExpenseManager#addExpense` enforces a set of assertions: the amount must remain positive, the description non-blank, and the category non-empty. Although assertions are disabled at runtime by default, they serve as guardrails during development and test execution (`./gradlew test` runs with `-ea`). The manager appends the expense to an `ArrayList`, deliberately avoiding sorting or filtering to preserve insertion order for index-based commands.
 
-The `Expense` object itself is largely immutable—only the paid flag can change post-construction. We considered using a builder but opted for a simple constructor to keep object creation lightweight. Formatting logic (`Expense#formatForDisplay`) centralises the "[`[X] [CATEGORY] DESCRIPTION - $AMOUNT`]" representation so that both `Ui` and tests stay in sync.
+The `Expense` object itself is largely immutable—only the paid flag can change post-construction. The implementation uses a simple constructor rather than a builder pattern to keep object creation lightweight. Formatting logic (`Expense#formatForDisplay`) centralizes the "[`[X] [CATEGORY] DESCRIPTION - $AMOUNT`]" representation so that both `Ui` and tests stay in sync.
 
 #### Logging and Diagnostics
 
@@ -458,7 +459,7 @@ During parsing, `OrCashBuddyException`s raised by `InputValidator` are caught in
 #### Alternatives Considered
 
 - **Positional arguments:** Rejected because optional fields would force users to remember ordering, increasing input errors.
-- **Validation inside `AddCommand`:** We deliberately kept parsing and validation upstream; performing both in the command would dilute separation of concerns and complicate error messaging.
+- **Validation inside `AddCommand`:** Parsing and validation are deliberately kept upstream. Performing both in the command would dilute separation of concerns and complicate error messaging.
 
 ***
 
@@ -466,7 +467,7 @@ During parsing, `OrCashBuddyException`s raised by `InputValidator` are caught in
 
 #### Overview
 
-The set budget feature allows users to establish a total budget amount that serves as a spending limit for tracking expenses. Users specify the budget using the command `setbudget a/AMOUNT`, where the amount must be a positive decimal value. This budget becomes the baseline for all financial tracking, enabling the application to calculate remaining balance, detect overspending, and trigger budget alerts.
+The set budget feature allows users to establish a total budget amount that serves as a spending limit for tracking expenses. Users specify the budget using the command `setbudget a/AMOUNT`, where the amount must be a positive decimal value. This budget becomes the baseline for all financial tracking, enabling the application to calculate remaining balance, detect overspending, and display a color-coded budget progress bar.
 
 The budget is persistent across application sessions and can be updated at any time by issuing a new `setbudget` command. When the budget is modified, the application immediately recalculates the remaining balance based on currently marked (paid) expenses.
 
@@ -541,25 +542,25 @@ Your total budget is now $100.00.
 
 The confirmation message is intentionally concise, focusing on the action completed. Users can view detailed budget status (remaining balance, percentage used) by running the `list` command, which displays the full financial summary with progress bar visualization.
 
+After setting the budget, the command immediately displays the color-coded progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`, providing instant visual feedback on budget usage.
+
 #### Integration with Budget Tracking
 
-Once set, the budget immediately affects several system behaviors:
-
-**Budget Status Determination:**
-After marking or unmarking expenses, `ExpenseManager#determineBudgetStatus()` evaluates remaining balance:
-- `EXCEEDED` when `remainingBalance < 0` (overspent)
-- `EQUAL` when `remainingBalance == 0` (exactly at budget)
-- `NEAR` when `0 < remainingBalance < $10.00` (approaching limit)
-- `OK` otherwise (comfortable margin)
+Once set, the budget immediately affects the progress bar visualization:
 
 **Visual Progress Bar:**
-The `list` command displays a color-coded progress bar:
-- Green: 0-70% of budget used
-- Yellow: 70-100% of budget used
-- Red: Over budget (>100%)
+Commands that affect budget usage display a color-coded progress bar:
+- Green: < 75% of budget used
+- Yellow: 75-100% of budget used
+- Red: Over budget (> 100%)
 
-**Budget Alerts:**
-Commands that modify total expenses (`mark`, `unmark`, `delete`) check budget status and display alerts via `Ui#showBudgetStatus()` when thresholds are crossed.
+**When Progress Bar is Shown:**
+The progress bar appears automatically after:
+- `setbudget` command (always)
+- `mark` command (always)
+- `unmark` command (always)
+- `delete` command (only if the deleted expense was marked)
+- `edit` command (only if the expense is marked AND the amount changed)
 
 #### Logging and Diagnostics
 
@@ -573,7 +574,7 @@ This simple log entry provides an audit trail of budget changes, useful for debu
 #### Design Rationale
 
 **Why require positive budget?**
-Zero or negative budgets have no meaningful interpretation in expense tracking. By rejecting these values early (during validation), we prevent downstream logic errors and provide clear error messages to users who might accidentally type `setbudget a/-50` or `setbudget a/0`.
+Zero or negative budgets have no meaningful interpretation in expense tracking. By rejecting these values early (during validation), the application prevents downstream logic errors and provides clear error messages to users who might accidentally type `setbudget a/-50` or `setbudget a/0`.
 
 **Why allow budget updates?**
 Real-world budgets change frequently (monthly allowances, project budgets, semester spending limits). Allowing seamless updates without requiring deletion of existing expenses provides flexibility while maintaining expense history. The application recalculates remaining balance immediately, so users see accurate status after any budget change.
@@ -602,27 +603,14 @@ Example error messages:
 **Floating-point precision:**
 Budget amounts are stored as double primitives. While this introduces potential floating-point errors, the `recalculateRemainingBalance()` assertion uses a tolerance of 0.001 to catch significant deviations without triggering false positives from typical floating-point arithmetic.
 
-#### Extensibility and Future Enhancements
+#### Extensibility Considerations
 
-- **Category-specific budgets:** Extend to support per-category limits (e.g., `setbudget cat/Food a/50`), requiring new fields in `ExpenseManager` and modified budget status logic to track multiple thresholds.
-- **Time-based budgets:** Add support for weekly or monthly budget periods with automatic reset (e.g., `setbudget a/500 period/monthly`), requiring date tracking for expenses and scheduled budget renewal.
-- **Budget history:** Maintain a log of budget changes over time to enable trend analysis and reporting (e.g., "Your budget increased 20% this semester").
-- **Multiple budgets:** Allow users to maintain separate budgets for different contexts (personal vs. club spending), requiring a budget selection mechanism in commands.
-- **Budget warnings:** Proactively alert users when adding an expense would exceed budget, before marking it as paid.
+Potential enhancements include category-specific budgets, time-based budget periods with automatic reset, budget history tracking, multiple budget support for different contexts, and proactive budget warnings when adding expenses.
 
 #### Alternatives Considered
 
-**Budget as optional parameter to add:**
-Some expense trackers allow setting budget while adding the first expense (e.g., `add a/10 desc/Lunch budget/100`). Rejected because:
-- Mixing expense entry with budget configuration violates single responsibility principle
-- Users might accidentally override their budget when adding routine expenses
-- Separate commands provide clearer intent and simpler parsing logic
-
-**Confirmation prompt for budget changes:**
-We considered requiring confirmation when updating an existing budget (e.g., "Your current budget is $50. Change to $100? [y/n]"). Rejected because:
-- Adds friction to a common operation (monthly budget resets)
-- CLI power users expect commands to execute immediately without interactive prompts
-- Users can verify the change via `list` command immediately after if needed
+- **Budget as optional parameter to add:** Rejected to maintain separation of concerns and prevent accidental budget overrides
+- **Confirmation prompt for budget changes:** Rejected to avoid friction in CLI workflows; users can verify changes via `list` command
 
 By keeping budget setting simple and immediate, orCASHbuddy maintains its lightweight, keyboard-centric design philosophy while providing the essential functionality needed for expense tracking.
 
@@ -632,7 +620,7 @@ By keeping budget setting simple and immediate, orCASHbuddy maintains its lightw
 
 #### Overview
 
-The mark/unmark workflow allows users to track which expenses have been paid, automatically updating budget calculations and providing immediate visual feedback. Users interact with expenses via one-based indices from the `list` command output. We chose simple index-based syntax (`mark EXPENSE_INDEX` and `unmark EXPENSE_INDEX`) to minimize typing and cognitive load during rapid expense management sessions.
+The mark/unmark workflow allows users to track which expenses have been paid, automatically updating budget calculations and providing immediate visual feedback. Users interact with expenses via one-based indices from the `list` command output. The application uses simple index-based syntax (`mark EXPENSE_INDEX` and `unmark EXPENSE_INDEX`) to minimize typing and cognitive load during rapid expense management sessions.
 
 Marking an expense triggers three critical updates: the expense's internal paid state flips to true, the `ExpenseManager` increments `totalExpenses` by the expense amount, and `remainingBalance` is recalculated. Unmarking reverses these operations, decrementing totals and restoring the balance. This design ensures budget tracking remains accurate and responsive to real-world payment workflows.
 
@@ -663,7 +651,7 @@ Marking an expense triggers three critical updates: the expense's internal paid 
     - For unmarking: `updateBudgetAfterUnmark(expense)` is called, which subtracts the expense amount from `totalExpenses` and invokes `recalculateRemainingBalance()`.
     - The manager returns the modified `Expense` object to the command.
     - The command passes the expense to `Ui#showMarkedExpense` or `showUnmarkedExpense`, which displays the confirmation with the updated visual status (`[X]` for marked, `[ ]` for unmarked).
-    - Finally, `ExpenseManager#determineBudgetStatus()` is invoked to evaluate if budget alerts should fire based on the new remaining balance. If status is not `OK`, the command calls `Ui#showBudgetStatus` with the status and remaining balance.
+    - Finally, the command calls `ui.showProgressBar(expenseManager.getBudgetData())` to display the updated budget progress bar with color-coded visual feedback.
 5. **Data persistence:** `Main` calls `StorageManager.saveExpenseManager(expenseManager, ui)` after command execution to persist the updated state to disk.
 
 The sequence diagram in `docs/diagrams/mark-sequence.puml` illustrates these interactions. A corresponding `unmark-sequence.puml` captures the symmetrical unmark flow with budget decrements instead of increments.
@@ -690,18 +678,15 @@ public void unmark() {
 
 These invariants are verified during development testing (when assertions are enabled with `-ea`) and logged at INFO level, making it easy to diagnose state corruption during manual testing or debugging.
 
-#### Budget Status Integration
+#### Progress Bar Display
 
-After marking or unmarking an expense, `ExpenseManager#determineBudgetStatus()` evaluates the new `remainingBalance` against predefined thresholds and returns a `BudgetStatus` enum:
+After marking or unmarking an expense, the command automatically displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`. The progress bar provides immediate visual feedback with color coding:
 
-- **`EXCEEDED` (`remainingBalance < 0`):** Budget has been exceeded.
-- **`EQUAL` (`remainingBalance == 0`):** Budget has been fully used.
-- **`NEAR` (`remainingBalance < $10.00`):** Remaining balance is below warning threshold.
-- **`OK`:** Sufficient budget remains.
+- **Green (< 75%):** Safe spending range
+- **Yellow (75-100%):** Approaching budget limit
+- **Red (> 100%):** Over budget
 
-If the status is not `OK`, the command invokes `Ui#showBudgetStatus(status, remainingBalance)`, which displays contextual alerts.
-
-This immediate feedback loop helps users make informed spending decisions right after recording payments, rather than requiring a separate `list` command to check status.
+This immediate visual feedback helps users make informed spending decisions right after recording payments, rather than requiring a separate `list` command to check status.
 
 #### Logging and Diagnostics
 
@@ -729,8 +714,8 @@ These logs are essential for verifying correct budget arithmetic during manual t
 
 #### Alternatives Considered
 
-- **Automatic marking on add:** Some expense trackers assume all added expenses are immediately paid. We rejected this because our target users (students managing interest group budgets) often log planned expenses, recurring bills, or shared costs before payment occurs. Explicit marking preserves flexibility for diverse workflows.
-- **Visual indicators in list:** Instead of `[X]`/`[ ]` markers, we explored color coding (green for paid, red for unpaid) or emoji indicators (✓/✗). Rejected because:
+- **Automatic marking on add:** Some expense trackers assume all added expenses are immediately paid. This was rejected because target users (students managing interest group budgets) often log planned expenses, recurring bills, or shared costs before payment occurs. Explicit marking preserves flexibility for diverse workflows.
+- **Visual indicators in list:** Color coding (green for paid, red for unpaid) or emoji indicators (✓/✗) were explored as alternatives to `[X]`/`[ ]` markers. These were rejected because:
     - ANSI colors may not render consistently across all terminals.
     - Emoji require Unicode support and increase display width.
     - Bracket notation is text-based, universally compatible, and familiar to users from todo list applications (including the CS2113 iP assignment).
@@ -741,7 +726,7 @@ These logs are essential for verifying correct budget arithmetic during manual t
 
 #### Overview
 
-The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`), maintaining consistency with other commands in the application. We chose separate prefix-based searches over a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
+The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`), maintaining consistency with other commands in the application. The design uses separate prefix-based searches rather than a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
 
 The find operation performs case-insensitive substring matching, prioritizing ease of use over exact matching. A search for `cat/food` will match expenses categorized as "Food", "Fast Food", or "Seafood". This approach reduces the cognitive burden of remembering exact category names or descriptions, particularly useful when users manage dozens of expenses across multiple categories. The search is read-only and does not modify any data, making it safe to use exploratively without risk of accidental changes.
 
@@ -790,35 +775,9 @@ The find operation performs case-insensitive substring matching, prioritizing ea
 
 The sequence diagram in `docs/diagrams/find-sequence.puml` illustrates these interactions, showing the branching logic for category versus description searches within `ExpenseManager`.
 
-#### Search Algorithm and Performance
+#### Search Algorithm
 
-Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with substring matching:
-
-```java
-public List<Expense> findExpensesByCategory(String category) {
-    validateSearchTerm(category, "Category");
-    
-    String searchTerm = category.toLowerCase().trim();
-    List<Expense> foundExpenses = new ArrayList<>();
-    
-    for (Expense expense : expenses) {
-        if (expense.getCategory().toLowerCase().contains(searchTerm)) {
-            foundExpenses.add(expense);
-        }
-    }
-    
-    LOGGER.log(Level.INFO, "Found {0} expenses matching category: {1}",
-            new Object[]{foundExpenses.size(), category});
-    
-    return foundExpenses;
-}
-```
-
-**Case insensitivity:** Achieved via `toLowerCase()` on both the expense field and search term. This adds minimal overhead (single-pass string conversion) compared to case-sensitive matching and significantly improves user experience because users need not remember exact capitalization from previous entries.
-**Substring matching rationale:** We chose `contains()` over `equals()` or `startsWith()` because:
-- Users often remember partial keywords (e.g., "lunch" from "Team lunch meeting").
-- Exact matching would frustrate users who mistype or abbreviate categories.
-- StartsWith would miss mid-string matches like "Fast Food" when searching for "food".
+Both `findExpensesByCategory` and `findExpensesByDescription` use linear search with case-insensitive substring matching via `String.contains()`. This approach prioritizes user experience (no need to remember exact capitalization or complete terms) over performance, which is acceptable for the expected dataset size of personal expense tracking.
 
 #### Display Format and User Feedback
 
@@ -841,60 +800,25 @@ Found 2 expense(s) matching category: food
 
 Users can visually scan the marked status (`[X]`/`[ ]`) within results, supporting workflows where they want to find unpaid expenses in a specific category or locate specific transactions by description keywords.
 
-#### Logging and Diagnostics
+#### Logging
 
-`FindCommand` logs at INFO level before and after search execution:
-
-```java
-LOGGER.log(Level.INFO, "Executing find command: type={0}, term={1}",
-        new Object[]{searchType, searchTerm});
-
-LOGGER.log(Level.INFO, "Found {0} matching expenses", foundExpenses.size());
-```
-
-`ExpenseManager` search methods also log results:
-
-```java
-LOGGER.log(Level.INFO, "Found {0} expenses matching category: {1}",
-        new Object[]{foundExpenses.size(), category});
-
-LOGGER.log(Level.INFO, "Found {0} expenses matching description: {1}",
-        new Object[]{foundExpenses.size(), keyword});
-```
-
-These logs help verify search accuracy during manual testing and provide debugging context when users report unexpected results. Since searches are read-only operations, logging includes only counts and search terms, not full expense details, to keep log files manageable and avoid sensitive data exposure.
-
-Example log sequence for `find cat/food`:
-```
-INFO: Executing find command: type=category, term=food
-INFO: Found 2 expenses matching category: food
-INFO: Found 2 matching expenses
-```
+Both `FindCommand` and `ExpenseManager` log search operations at INFO level, recording search type, search term, and result count. Logging includes only counts and search terms (not full expense details) to maintain manageable log files and avoid sensitive data exposure.
 
 #### Design Rationale
 
-**Why separate category and description searches?**  
-Alternatives included a unified search that checks both fields simultaneously or allowing combined searches (`find cat/food desc/lunch`). We chose mutually exclusive searches because:
-- Users typically know whether they're hunting by category or description.
-- Separate searches produce more predictable results: unified searches would mix matches, complicating result interpretation.
-- Command syntax remains simple, with only one prefix required per invocation.
+**Why separate category and description searches?**
+Mutually exclusive searches were chosen over unified searches because users typically know which field they're searching, separate searches produce predictable results, and the command syntax remains simple with only one prefix required.
 
-**Why case-insensitive matching?**  
-Case-sensitive matching was rejected because:
-- Users rarely remember exact capitalization from previous entries.
-- Mixed-case categories (e.g., "FastFood" vs "fastfood" vs "Fast Food") are common in real-world data entry.
-- The performance cost of `toLowerCase()` is negligible for our target dataset size.
+**Why case-insensitive matching?**
+Case-insensitive matching prevents frustration from capitalization mismatches and handles real-world data entry inconsistencies with negligible performance impact.
 
-#### Extensibility and Future Enhancements
+#### Extensibility Considerations
 
-- **Combined searches:** Introducing `find cat/food desc/lunch` would require collecting both category and description matches, intersecting the results, then displaying only expenses matching both criteria. This needs parser changes to allow multiple optional prefixes simultaneously.
-- **Date-based searches:** Future versions with date tracking could support `find date/2024-01-15` or `find date/last-week`, requiring new fields in `Expense` and corresponding manager methods.
-- **Amount range searches:** Queries like `find a/10-50` to locate expenses within price bands would complement category/description searches for budget analysis workflows.
-- **Search result actions:** A `mark-found` or `delete-found` command could batch-operate on search results, though this introduces complexity in confirming user intent before bulk modifications.
+Potential enhancements include combined category/description searches, date-based searching, amount range queries, and batch operations on search results.
 
 #### Alternatives Considered
 
-- **Search result caching:** We considered storing the last search results in `ExpenseManager` to support pagination or follow-up operations. Rejected because it introduces statefulness that complicates testing and doesn't align with the stateless command model used elsewhere.
+- **Search result caching:** Storing the last search results in `ExpenseManager` to support pagination or follow-up operations was considered but rejected because it introduces statefulness that complicates testing and doesn't align with the stateless command model used elsewhere.
 - **Multi-field unified search:** A single `search KEYWORD` command that checks all fields (category, description, amount) was considered but rejected because amount matching requires different logic (numerical comparison vs string matching), and unified results would be harder to interpret.
 
 ***
@@ -905,7 +829,7 @@ Case-sensitive matching was rejected because:
 
 The delete workflow enables users to remove unwanted or incorrect expense entries from the list permanently. Users specify the expense to delete using its index in the displayed list (`delete INDEX`), maintaining consistency with other index-based commands such as `mark` and `unmark`. 
 The command updates the stored data automatically, ensuring that the deleted expense no longer appears after restarting the application.
-Deletion is an irreversible operation, once an expense is deleted, it cannot be recovered. However, we designed the workflow to be deliberate and safe by requiring explicit index input and validating that the list is not empty before proceeding. 
+Deletion is an irreversible operation; once an expense is deleted, it cannot be recovered. The workflow is designed to be deliberate and safe by requiring explicit index input and validating that the list is not empty before proceeding. 
 This prevents accidental deletions and ensures data integrity.
 
 <br>
@@ -923,9 +847,11 @@ This prevents accidental deletions and ensures data integrity.
     - If validation fails, an `OrCashBuddyException` is thrown with an appropriate error message (e.g., "Invalid index: 5. There are only 3 expenses.").
 3. **Command creation:** `Parser` constructs a new `DeleteCommand` object and stores the parsed index for later execution.
 4. **Execution:** When `Main` invokes `command.execute(expenseManager, ui)`:
+    - The command retrieves the expense to determine if it was marked.
     - The command calls `ExpenseManager#deleteExpense(index)` to remove the targeted expense.
     - If the expense was marked as paid, the manager automatically updates total expenses and remaining balance.
     - The deleted expense is passed to `Ui#showDeletedExpense` for user feedback.
+    - If the deleted expense was marked, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())`.
     - Data persistence is triggered by the main application logic after command execution, ensuring consistency without coupling storage logic into `ExpenseManager`.
 
 #### Deletion Logic and Validation
@@ -994,8 +920,8 @@ These logs help trace command execution and identify user input errors during te
 
 #### Design Rationale
 
-##### Why index-based deletion?
-We chose index-based deletion instead of name-based deletion to:
+**Why index-based deletion?**
+Index-based deletion was chosen over name-based deletion to:
 
 - Keep command syntax concise and consistent with other list-based commands.
 - Avoid ambiguity when multiple expenses share the same category or description.
@@ -1018,8 +944,8 @@ Considered adding a confirmation step (Are you sure? y/n) to prevent accidental 
 ##### Name-based deletion
 Rejected due to ambiguity when duplicate names exist. Index-based deletion remains deterministic and simpler to implement.
 
-##### Deferred deletion
-We considered queuing deletions and saving all at exit. Rejected in favor of immediate persistence for reliability and simplicity.
+**Deferred deletion:**
+Queuing deletions and saving all at exit was considered but rejected in favor of immediate persistence for reliability and simplicity.
 
 ***
 
@@ -1065,7 +991,7 @@ The `EditCommand` class extends `Command` and performs the update by replacing t
 
 4. **UI Feedback:**
    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-   - `ExpenseManager#checkRemainingBalance(ui)` is called to recalculate the budget and display alerts if thresholds are exceeded.
+   - If the edited expense was marked AND the amount changed, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())` to show the updated budget usage.
 
 5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
@@ -1384,20 +1310,20 @@ Exiting the application used to depend on `Main` inspecting raw input (checking 
 2. **Execution:** `Main` calls `command.execute(expenseManager, ui)` without special casing. `ByeCommand` logs a concise INFO message and calls `Ui#showGoodbye`.
 3. **Exit signalling:** After execution, `Main` queries `command.isExit()`, which `ByeCommand` overrides to return `true`. Once `Main` receives `true`, the run loop terminates cleanly.
 
-The sequence diagram stored at `docs/diagrams/bye-sequence.puml` captures this flow. Rendering it clarifies that no other component interacts with the exit decision, preserving a single exit pathway.
+The sequence diagram stored at `docs/diagrams/bye-sequence.puml` captures this flow, showing that no other component interacts with the exit decision, preserving a single exit pathway.
 
-#### Rationale
+#### Logging
 
-- **Testability:** Unit tests can now instantiate `ByeCommand` directly, verifying both the farewell message and the exit flag without running the whole application loop (`ByeCommandTest` demonstrates this).
-- **Extensibility:** If we later introduce persistence, `ByeCommand` can flush data stores before returning, while non-exit commands remain unaffected.
+`ByeCommand` logs a concise INFO message upon execution for audit trail purposes.
 
+#### Design Rationale
+
+The `ByeCommand` integrates exit logic into the command framework rather than using special-case handling in `Main`. This design improves testability (unit tests can instantiate `ByeCommand` directly) and extensibility (future persistence operations can be added to the command without affecting other components).
 
 #### Alternatives Considered
 
-- **Direct system exit:** Calling `System.exit(0)` inside `ByeCommand` was rejected because it would complicate testing and bypass finally blocks or future shutdown hooks.
-- **Flag in Main:** Another option was a mutable boolean toggled inside `Main` after recognising `bye`. This still requires special casing and scatters exit logic.
-
-By keeping farewell handling within the command framework, orCASHbuddy maintains a coherent abstraction and prepares for richer lifecycle management in subsequent releases.
+- **Direct system exit:** Calling `System.exit(0)` inside `ByeCommand` was rejected because it complicates testing and bypasses finally blocks or future shutdown hooks.
+- **Flag in Main:** Using a mutable boolean in `Main` was rejected because it requires special-case handling and scatters exit logic.
 
 ***
 
@@ -1426,16 +1352,17 @@ The help feature provides users with a comprehensive list of available commands 
 
 The sequence diagram in `docs/diagrams/help-sequence.puml` illustrates these interactions.
 
-#### Rationale
+#### Logging
 
-- **User-Friendliness:** Provides immediate access to command documentation, reducing the learning curve for new users and serving as a quick reference for experienced users.
-- **Simplicity:** The command is stateless and does not require any arguments, making it robust and easy to use.
-- **Consistency:** Integrates seamlessly with the existing command-driven architecture.
+`HelpCommand` logs execution at INFO level for audit trail purposes.
 
-#### Extensibility and Future Enhancements
+#### Design Rationale
 
-- **Contextual Help:** Future enhancements could include `help <command_name>` to provide specific details for a given command.
-- **Pagination:** For a very large number of commands, pagination could be introduced to display help information in chunks.
+The `help` command is intentionally simple and stateless, requiring no arguments. This design provides immediate access to command documentation, reducing the learning curve for new users while serving as a quick reference for experienced users.
+
+#### Extensibility Considerations
+
+Potential enhancements include contextual help for specific commands (`help <command_name>`) and pagination for large command lists.
 
 ***
 
@@ -1481,15 +1408,17 @@ The `list` command serves as a core read-only function within the application, o
 
 <br>
 
-#### Rationale
+#### Logging
 
-- **User Experience:** Combines textual and visual feedback (color-coded progress bar) for better readability.
+`ListCommand` logs execution at INFO level, recording when the financial summary is displayed.
 
-#### Extensibility and Future Enhancements
+#### Design Rationale
 
-- **Pagination:** Introduce pagination for users with a large number of expenses.
-- **Graphical Visualization:** Display pie charts or bar graphs for expense breakdown by category.
-- **Date Range Support:** Allow usage such as `list from/2025-01-01 to/2025-01-31` for time-specific summaries.
+The `list` command combines textual and visual feedback through a color-coded progress bar, providing users with both detailed information and at-a-glance status. As a read-only operation, it's safe to execute repeatedly without side effects, encouraging users to check their budget status frequently.
+
+#### Extensibility Considerations
+
+Potential enhancements include pagination for large expense lists, graphical visualization (pie charts, bar graphs), and date range filtering for time-specific summaries.
 
 ---
 
@@ -1595,7 +1524,7 @@ Priorities: High (must have) - `***`, Medium (nice to have) - `**`, Low (unlikel
 2. **Performance:** Interactive commands (`add`, `list`, `find`, `mark`, `unmark`, `edit`, `delete`, `sort`, `setbudget`) should complete within one second on a typical student laptop (≥2 CPU cores, ≥8 GB RAM).
 3. **Persistence:** Every mutating command must trigger `StorageManager` to persist the updated state to `data/appdata.ser`. On startup, loading must recreate the most recent saved state.
 4. **Robustness:** Invalid user input or storage errors must be caught and presented as actionable error messages; the application must not terminate due to uncaught exceptions.
-5. **Feedback:** Each command must yield immediate feedback (success confirmation, error explanation, or budget alert) so that users know the outcome of their action.
+5. **Feedback:** Each command must yield immediate feedback (success confirmation, error explanation, or progress bar display) so that users know the outcome of their action.
 6. **Quality bar:** `./gradlew checkstyleMain checkstyleTest` and `./gradlew test` must pass before release.
 
 ---
@@ -1607,7 +1536,7 @@ Priorities: High (must have) - `***`, Medium (nice to have) - `**`, Low (unlikel
 - **Paid Expense:** An expense that has been marked as settled using the `mark` command.
 - **Uncategorized:** The default category assigned to an expense when the user omits the optional `cat/` parameter during the `add` command.
 - **Financial Summary:** The combined output showing budget, total marked expenses, remaining balance, and the progress bar.
-- **Budget Status:** The alert level (OK, NEAR, EQUAL, EXCEEDED) communicated to users when the remaining balance crosses defined thresholds.
+- **Progress Bar:** A color-coded visual indicator (green/yellow/red) that shows budget usage percentage, displayed after commands that affect total expenses or budget.
 - **Remaining Balance:** Budget minus the sum of all marked expenses.
 - **Mainstream OS:** Operating systems with significant user bases, such as Windows, macOS, and Linux.
 - **OrCashBuddyException:** A custom exception class used to signal recoverable application-specific errors, typically caught by the `Main` loop or `Parser` to provide user-friendly feedback.
@@ -1805,17 +1734,22 @@ All tests assume the repository has been cloned and Java 17 is available.
 
 <br>
 
-### Budget Alerts
+### Budget Progress Bar Display
 
-1. **Approaching budget alert**
-    1. Set budget: `setbudget a/50`
-    2. Add and mark expenses totaling $42-$49.
-    3. Mark another expense to exceed threshold.<br>
-       **Expected:** After marking, shows "Alert: Your remaining balance is low. Remaining balance: $X.XX"
+1. **Yellow warning (75% budget usage)**
+    1. Set budget: `setbudget a/100`
+    2. Add and mark expenses totaling $75-$99.
+    3. Mark another expense to reach 75% or more.<br>
+       **Expected:** After marking, the progress bar displays in yellow with the percentage and remaining balance.
 
-2. **Exceeded budget alert**
-    1. Continue marking expenses beyond budget.<br>
-       **Expected:** Shows "Alert: You have exceeded your budget! Remaining balance: $-X.XX"
+2. **Red alert (exceeded budget)**
+    1. Continue marking expenses beyond budget (total > $100).<br>
+       **Expected:** The progress bar displays in red, showing percentage over 100% and negative remaining balance (e.g., "Over by: $X.XX")
+
+3. **Green status (under 75%)**
+    1. Set budget: `setbudget a/100`
+    2. Add and mark expenses totaling less than $75.<br>
+       **Expected:** The progress bar displays in green with the percentage and remaining balance.
 
 <br>
 
