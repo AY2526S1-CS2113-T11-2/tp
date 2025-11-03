@@ -726,7 +726,7 @@ Potential enhancements include pagination for large expense lists, graphical vis
 
 #### Overview
 
-The **Edit Expense** feature allows users to modify details of an existing expense, such as the amount, description, or category, without deleting and re-adding it. This makes it easier for users to correct mistakes or update expense information while keeping accurate totals.
+The `EditCommand` class extends `Command` and performs the update by replacing the specified `Expense` with a new `Expense` object containing the modified details.
 
 <br>
 
@@ -746,37 +746,35 @@ The **Edit Expense** feature allows users to modify details of an existing expen
    edit /id<index> /a<amount> /desc<description> /cat<category>
    ```
    The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
-    - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
-    - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
-
+   - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
+   - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
+     ![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
 3. **Execution:**  
-   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed — unspecified fields remain the same.
+   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
 
    When `Main` invokes `command.execute(expenseManager, ui)`:
-    - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
-    - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
-    - A new `Expense` object `edited` is constructed with the updated parameters.
-    - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
-    - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
-
+   - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
+   - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
+   - A new `Expense` object `edited` is constructed with the updated parameters.
+   - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
+   - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
+     ![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
 4. **UI Feedback:**
-    - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-    - If the edited expense was marked AND the amount changed, the command displays the budget progress bar via `ui.showProgressBar(expenseManager.getBudgetData())` to show the updated budget usage.
-
-5. **Data Persistence:**
+   - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
+   - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
+     ![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
+5. **Data Persistence:**  
    `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
 
 <br>
 
 #### Logic & Validation
 
-**Validation:** Index validation ensures the provided index corresponds to an existing expense. `InputValidator` validates new amount values (must be positive decimals), descriptions (non-blank ASCII), and categories (naming rules). Null values for optional fields preserve original data, enabling partial edits.
+- Index validation ensures the provided index corresponds to an existing expense. `InputValidator` validates new amount values (must be positive decimals), descriptions (non-blank ASCII), and categories (naming rules). Null values for optional fields preserve original data, enabling partial edits.
 
-**Replacement Logic:** The `Expense` class uses final fields for immutability. The edit operation creates a new `Expense` object with updated values, replacing the original via `ExpenseManager#replaceExpense`. The marked status is preserved by re-marking the new expense if the original was marked.
+- Null values for fields (amount/description/category) preserve the original data, allowing partial edits.
 
-**Budget Impact:** If the edited expense is marked AND the amount changed, the command updates budget calculations and displays the progress bar.
-
-**Empty Edit Handling:** If no parameters are provided, `Ui#showEmptyEdit` displays "No changes were made" message.
+- If no parameters are provided or no changes in attributes are detected, `Ui#showEmptyEdit` displays "No changes were made" message.
 
 <br>
 
@@ -784,18 +782,12 @@ The **Edit Expense** feature allows users to modify details of an existing expen
 
 Error handling addresses multiple scenarios:
 - **Invalid index:** `InputValidator` and `ExpenseManager#validateIndex` throw `OrCashBuddyException` for non-numeric, negative, or out-of-range indices
-- **Empty list:** Editing when no expenses exist triggers "No expenses to edit" error
+- **Empty list:** Editing when no expenses exist triggers "No expenses available" error
 - **Invalid field values:** `InputValidator` rejects negative amounts, empty descriptions, and malformed categories with specific error messages
-- **No changes provided:** Displays informative message rather than throwing error
-- All validation errors are wrapped in `InvalidCommand` for user-friendly display
 
 <br>
 
 #### Design Rationale
-
-##### Why replace instead of mutate?
-The `Expense` class uses `final` fields to preserve immutability and data safety.  
-Creating a new `Expense` object ensures that once created, an instance cannot be corrupted by later edits.
 
 ##### Why allow partial updates?
 Users may only want to fix one detail (e.g., typo in description), so optional parameters provide flexibility.
@@ -804,10 +796,8 @@ Users may only want to fix one detail (e.g., typo in description), so optional p
 
 #### Alternatives Considered
 
-- **In-place mutation:** Rejected because `Expense` uses final fields for immutability; creating new objects ensures data safety
-- **Delete and re-add workflow:** Rejected because it's cumbersome for users and doesn't preserve marked status or list position
-- **Separate commands for each field:** Considered having `editAmount`, `editDesc`, `editCat` commands, but rejected to keep command set concise
-- **Automatic budget recalculation for all edits:** Only recalculates when marked expense amount changes, avoiding unnecessary updates
+- **In-place mutation:** Rejected because `Expense` class uses `final` fields to preserve immutability and data safety.  
+  Creating a new `Expense` object ensures that once created, an instance cannot be corrupted by later edits.
 
 <br>
 
