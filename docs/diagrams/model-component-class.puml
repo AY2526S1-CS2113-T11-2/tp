@@ -8,26 +8,6 @@ package "Model Component" {
         - totalExpenses : double
         - remainingBalance : double
         --
-        + getBudget() : double
-        + getTotalExpenses() : double
-        + getRemainingBalance() : double
-        + getSize() : int
-        + getExpenses() : List<Expense>
-
-        + addExpense(expense : Expense) : void
-        + deleteExpense(index : int) : Expense
-        + getExpense(index : int) : Expense
-        + replaceExpense(index : int, newExpense : Expense) : void
-
-        + markExpense(index : int) : Expense
-        + unmarkExpense(index : int) : Expense
-
-        + setBudget(budget : double) : void
-        + determineBudgetStatus() : BudgetStatus
-
-        + sortExpenses() : List<Expense>
-        + findExpensesByCategory(category : String) : List<Expense>
-        + findExpensesByDescription(keyword : String) : List<Expense>
     }
 
     class Expense {
