@@ -262,7 +262,7 @@ Budget Used: [==============================|]  105.00%  (Over by: $10.00)
 <!-- @@author gumingyoujia -->
 ### Listing Expenses and Summary: `list`
 
-Shows your current budget, total paid expenses, remaining balance, and all recorded expense in the order added.
+Shows your current budget, total paid expenses, progress bar and all recorded expense in the order added.
 
 **Format:** `list`
 
