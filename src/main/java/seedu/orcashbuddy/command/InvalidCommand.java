@@ -66,14 +66,14 @@ public class InvalidCommand extends Command {
         } else if (errorMessage.contains("find") || errorMessage.contains("search criteria") ||
                 errorMessage.contains("search criterion")) {
             ui.showFindUsage();
+        } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
+            ui.showSetBudgetUsage();
         } else if (errorMessage.contains("'add'") || errorMessage.contains("a/") ||
                 errorMessage.contains("desc/") || errorMessage.contains("Description") ||
                 errorMessage.contains("cat/") || errorMessage.contains("Category")) {
             ui.showAddUsage();
         } else if (errorMessage.contains("'delete'")) {
             ui.showDeleteUsage();
-        } else if (errorMessage.contains("budget") || errorMessage.contains("Budget")) {
-            ui.showSetBudgetUsage();
         } else if (errorMessage.contains("'mark'")) {
             ui.showMarkUsage();
         } else if (errorMessage.contains("'unmark'")) {
