@@ -100,6 +100,7 @@ Exit the application:                  bye
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - Use this whenever you need a quick reminder of supported commands
 - The help menu is also displayed when you first launch orCASHbuddy
 
@@ -306,6 +307,7 @@ Here is your list of expenses:
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - If you have no expenses yet, orCASHbuddy suggests adding one with the `add` command
 - The indices shown (1, 2, 3...) are used for `mark`, `unmark`, `edit`, and `delete` commands
 - Marked expenses display `[X]`, unmarked expenses display `[ ]`
@@ -511,6 +513,7 @@ Try: add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - The sorting is temporary and does not change the order in `list`
 - The numbering shown (1, 2, 3...) is **display-only** and does not correspond to the indices used by `mark`, `unmark`, `edit`, or `delete`
 - Always use `list` to verify the correct index before modifying expenses
@@ -538,6 +541,7 @@ Bye. Hope to see you again soon!
 ```
 
 **Notes:**
+- This command does not accept any arguments and will reject input with extra arguments
 - You can also terminate the program by closing the terminal window, but using `bye` ensures the farewell message is displayed
 - All data is saved automatically before exiting
 
