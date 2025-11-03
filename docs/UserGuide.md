@@ -113,7 +113,7 @@ Creates a new expense entry with an amount, description, and optional category.
 **Format:** `add a/AMOUNT desc/DESCRIPTION [cat/CATEGORY]`
 
 **Parameters:**
-- `AMOUNT` — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`).
+- `AMOUNT` — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — Tag to group similar expenses. It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters). If omitted, the category defaults to `Uncategorized`.
 
@@ -145,7 +145,7 @@ Defines your total spending budget for expense tracking and alerts.
 **Format:** `setbudget a/AMOUNT`
 
 **Parameters:**
-- `AMOUNT` — Your total budget as a positive number between $0.01 and $1,000,000,000,000 with up to two decimal places
+- `AMOUNT` — Your total budget as a positive number between $0.01 and $1,000,000,000,000 with up to two decimal places. Any digits beyond two decimal places will be ignored.
 
 **Example:**
 ```
@@ -321,7 +321,7 @@ Modifies the amount, description, and/or category of an existing expense. Update
 
 **Parameters:**
 - `INDEX` — Positive integer index of the expense in the list (use `list` to see indices).
-- `AMOUNT` (optional) — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`).
+- `AMOUNT` (optional) — Positive number between $0.01 and $1,000,000,000,000 with up to two decimal places (e.g., `12.50`). Any digits beyond two decimal places will be ignored.
 - `DESCRIPTION` (optional) — Short sentence describing the expense using ASCII characters only.
 - `CATEGORY` (optional) — It must start with a letter and can include ASCII letters, numbers, spaces, or hyphens (maximum 20 characters).
 
