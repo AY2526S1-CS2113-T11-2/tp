@@ -1012,9 +1012,11 @@ Queuing deletions and saving all at exit was considered but rejected in favor of
 
 #### Overview
 
-The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`), maintaining consistency with other commands in the application. The design uses separate prefix-based searches rather than a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
+The find workflow enables users to quickly locate expenses by searching either category or description fields, returning all matching results in a filtered view. Users specify search criteria via prefix-based syntax (`find cat/CATEGORY` or `find desc/DESCRIPTION`).
 
-The find operation performs case-insensitive substring matching, prioritizing ease of use over exact matching. A search for `cat/food` will match expenses categorized as "Food", "Fast Food", or "Seafood". This approach reduces the cognitive burden of remembering exact category names or descriptions, particularly useful when users manage dozens of expenses across multiple categories. The search is read-only and does not modify any data, making it safe to use exploratively without risk of accidental changes.
+The design uses separate prefix-based searches rather than a unified keyword approach to give users precise control: category searches target organizational labels while description searches hunt for specific transaction details.
+
+The find operation performs case-insensitive substring matching, prioritizing ease of use over exact matching. A search for `cat/food` will match expenses categorized as "Food", "Fast Food", or "Seafood". This approach reduces the need to remember exact category names or descriptions, particularly useful when users manage dozens of expenses across multiple categories.
 
 <br>
 
@@ -1025,38 +1027,24 @@ The find operation performs case-insensitive substring matching, prioritizing ea
 
 #### Control Flow
 
-1. **Input capture:** `Main` reads the raw command line (`find cat/groceries` or `find desc/lunch`) and forwards it to `Parser`.
+1. **Input capture:** `Main` reads the command line (e.g., `find cat/food`) and forwards it to `Parser`.
 
-2. **Input parsing and Command Creation:**  
-   ![Edit Parsing_Sequence Diagram](images/edit-parsing-sequence.png)
-   The user inputs an edit command in the form:
-   ```
-   edit /id<index> /a<amount> /desc<description> /cat<category>
-   ```
-   The parser, recognizes the `edit` keyword, extracts the provided parameters and constructs an `EditCommand` object.
-   - Attributes `newAmount`, `newDescription`, and `newCategory` store the values provided by the user.
-   - If the user omits any parameter, the corresponding attribute remains `null`, indicating no change for that field.
+2. **Tokenization and validation:** `Parser` uses `ArgumentParser` to extract optional `cat/` and `desc/` values:
+    - If a non-empty category is found, constructs a category-based `FindCommand`.
+    - If no category but a non-empty description exists, constructs a description-based `FindCommand`.
+    - If both prefixes are absent or empty, throws `OrCashBuddyException` with message "Missing search criteria for 'find' command".
+    - If both prefixes are present, throws `OrCashBuddyException` with message "Please provide only one search criterion: cat/ OR desc/".
 
-3. **Execution:**  
-   The existing expense is replaced with a new `Expense` instance containing updated fields. Only the provided fields are changed, unspecified fields remain the same.
+3. **Command creation:** `Parser` constructs a `FindCommand` with `searchType` (`"category"` or `"description"`) and the trimmed `searchTerm`.
 
-   ![Edit Execution_Sequence Diagram](images/edit-execution-sequence.png)
-   When `Main` invokes `command.execute(expenseManager, ui)`:
-   - The command retrieves the original expense via `ExpenseManager#getExpense(index)`, capturing its amount, description, category, and marked status.
-   - For each editable field, the command determines the new value: if the user provided an update, it uses that; otherwise, it retains the original value.
-   - A new `Expense` object `edited` is constructed with the updated parameters.
-   - The command calls `ExpenseManager#replaceExpense(index, edited)` to replace the original expense in the list.
-   - If the original expense was marked, `ExpenseManager#markExpense(index)` is invoked to preserve the marked state.
+4. **Execution:** `Main` invokes `command.execute(expenseManager, ui)`:
+    - The command logs the search operation at INFO level.
+    - Based on `searchType`, calls either `ExpenseManager#findExpensesByCategory(searchTerm)` or `ExpenseManager#findExpensesByDescription(searchTerm)`.
+    - Both methods perform case-insensitive substring matching: convert search term to lowercase, iterate through expenses, and accumulate matches where the target field contains the search term.
+    - The manager returns the matching expenses to the command.
+    - The command passes results to `Ui#showFoundExpenses`, which displays the matching expenses or a "no results" message.
 
-4. **UI Feedback:**
-   ![Edit_UI Sequence Diagram](images/edit-UI-sequence.png)
-   - The updated expense is displayed to the user via either `Ui#showEmptyEdit` or `Ui#showEditedExpense` depending on whether the user has made any edits to the expense.
-   - `ui#showProgressBar` is called to display budget usage if the user changes the amount of a marked expense.
-
-5. **Data Persistence:**  
-   `StorageManager#saveExpenseManager` is invoked to immediately persist the updated expense list to disk, ensuring no data is lost.
-
-5. <br>
+The sequence diagram in `find-sequence.puml` illustrates the interactions.
 
 #### Logic & Validation
 
