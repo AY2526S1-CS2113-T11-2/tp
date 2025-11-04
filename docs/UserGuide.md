@@ -33,10 +33,10 @@ This document explains how to set up the application, describes every available 
 ## Quick Start
 
 1. **Install Java 17.** orCASHbuddy requires Java 17 or later. You can verify your version by running `java -version` in your terminal.
-2. **Download the application.** Grab the latest `orcashbuddy.main.jar` from your course release or the project's GitHub Releases page and place it in a convenient folder.
+2. **Download the application.** Grab the latest `orCASHbuddy.main.jar` from your course release or the project's GitHub Releases page and place it in a convenient folder.
 3. **Launch the program.** Open a terminal in the folder containing the JAR and run:
    ```bash
-   java -jar orcashbuddy.main.jar
+   java -jar orCASHbuddy.main.jar
    ```
    Once the program starts, you’ll see a welcome message and the command menu in your terminal window, as shown below.
     ```
